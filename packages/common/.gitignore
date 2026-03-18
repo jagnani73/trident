@@ -1,0 +1,3 @@
+# Drizzle internal artifacts (not authoritative)
+database/meta/
+database/*.sql

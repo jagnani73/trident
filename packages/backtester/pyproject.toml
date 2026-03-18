@@ -1,0 +1,13 @@
+[project]
+name = "trident-backtester"
+version = "0.1.0"
+description = "Backtesting module for Trident vault strategy"
+requires-python = ">=3.11"
+dependencies = [
+    "pandas>=2.0",
+    "numpy>=1.24",
+    "matplotlib>=3.7",
+    "plotly>=5.15",
+    "requests>=2.31",
+    "jupyter>=1.0",
+]

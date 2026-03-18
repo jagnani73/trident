@@ -1,0 +1,15 @@
+{
+  "name": "@trident/backend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "dev:bot": "tsx watch microservices/bot-engine/index.ts",
+    "dev:collector": "tsx watch microservices/data-collector/index.ts",
+    "dev:api": "tsx watch microservices/api/index.ts",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@trident/common": "workspace:*"
+  }
+}

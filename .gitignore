@@ -1,0 +1,28 @@
+node_modules/
+dist/
+.next/
+.env
+.env.local
+*.log
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Docker
+docker-data/
+
+# Backtester data cache
+packages/backtester/data_cache/
+
+# Solana keypairs
+*.json.keypair
