@@ -71,7 +71,7 @@ export const convertToAppError = (error: unknown, scope: ErrorScope = ErrorScope
         "Internal Server Error";
 
     return new AppError({
-        scope,
+        scope, // Use the passed scope parameter
         code: httpStatus,
         message,
         log: (error as Error)?.stack || String(error),
@@ -110,6 +110,9 @@ export class AppError extends Error {
         }
     }
 
+    /**
+     * Convert to public-safe object for client consumption
+     */
     toPublic(): AppErrorPublic {
         return {
             scope: this.scope,
@@ -122,6 +125,9 @@ export class AppError extends Error {
         };
     }
 
+    /**
+     * Convert to full object for logging (includes stack trace)
+     */
     toLog() {
         return {
             ...this.toPublic(),

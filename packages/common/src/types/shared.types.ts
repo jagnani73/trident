@@ -1,11 +1,13 @@
-export interface ResponseWithData<T> {
-    success: boolean;
-    data: T;
-}
+import type { AppErrorPublic } from "../errors";
 
-export interface PaginatedResponse<T> {
-    items: T[];
-    total: number;
-    page: number;
-    limit: number;
-}
+export type ResponseWithData<T> =
+    | {
+          success: true;
+          data: T;
+      }
+    | {
+          success: false;
+          data: AppErrorPublic;
+      };
+
+export type Hex = `0x${string}`;

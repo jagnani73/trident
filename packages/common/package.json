@@ -6,7 +6,8 @@
     "types": "src/index.ts",
     "exports": {
         ".": "./src/index.ts",
-        "./database": "./database/index.ts",
+        "./constants": "./src/constants/index.ts",
+        "./database": "./src/database/index.ts",
         "./errors": "./src/errors/index.ts",
         "./types": "./src/types/index.ts"
     },

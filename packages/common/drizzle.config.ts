@@ -6,7 +6,7 @@ export default defineConfig({
     dbCredentials: {
         url: process.env.DATABASE_URL!,
     },
-    out: "./database",
+    out: "./src/database",
     casing: "snake_case",
     introspect: {
         casing: "preserve",
