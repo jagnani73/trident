@@ -1,26 +1,158 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --font-sans: var(--font-geist-sans);
+    --font-mono: var(--font-geist-mono);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+    --color-chart-1: var(--chart-1);
+    --color-chart-2: var(--chart-2);
+    --color-chart-3: var(--chart-3);
+    --color-chart-4: var(--chart-4);
+    --color-chart-5: var(--chart-5);
+    --color-chart-6: var(--chart-6);
+    --color-chart-7: var(--chart-7);
+    --color-chart-8: var(--chart-8);
+    --color-profit: var(--profit);
+    --color-profit-foreground: var(--profit-foreground);
+    --color-profit-muted: var(--profit-muted);
+    --color-loss: var(--loss);
+    --color-loss-foreground: var(--loss-foreground);
+    --color-loss-muted: var(--loss-muted);
+    --color-warning: var(--warning);
+    --color-warning-foreground: var(--warning-foreground);
+    --color-warning-muted: var(--warning-muted);
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
+    --radius-2xl: calc(var(--radius) + 8px);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+    min-height: 100vh;
+}
+
+/* Dark mode (default — trading terminal) */
+:root {
+    --radius: 0.5rem;
+
+    /* Surface hierarchy — very dark */
+    --background: oklch(0.12 0.01 220);
+    --foreground: oklch(0.93 0.005 220);
+    --card: oklch(0.16 0.01 220);
+    --card-foreground: oklch(0.93 0.005 220);
+    --popover: oklch(0.16 0.01 220);
+    --popover-foreground: oklch(0.93 0.005 220);
+
+    /* Brand cyan/teal */
+    --primary: oklch(0.72 0.14 195);
+    --primary-foreground: oklch(0.12 0.01 220);
+
+    /* Supporting */
+    --secondary: oklch(0.22 0.01 220);
+    --secondary-foreground: oklch(0.93 0.005 220);
+    --muted: oklch(0.22 0.012 220);
+    --muted-foreground: oklch(0.60 0.015 220);
+    --accent: oklch(0.22 0.025 195);
+    --accent-foreground: oklch(0.93 0.005 220);
+    --destructive: oklch(0.65 0.22 25);
+
+    /* Chrome */
+    --border: oklch(0.26 0.012 220);
+    --input: oklch(0.26 0.012 220);
+    --ring: oklch(0.72 0.14 195);
+
+    /* Charts */
+    --chart-1: oklch(0.72 0.14 195);
+    --chart-2: oklch(0.70 0.18 152);
+    --chart-3: oklch(0.78 0.15 68);
+    --chart-4: oklch(0.65 0.18 305);
+    --chart-5: oklch(0.70 0.20 25);
+    --chart-6: oklch(0.68 0.14 250);
+    --chart-7: oklch(0.66 0.16 340);
+    --chart-8: oklch(0.68 0.12 130);
+
+    /* Trading semantic */
+    --profit: oklch(0.72 0.18 152);
+    --profit-foreground: oklch(0.12 0 0);
+    --profit-muted: oklch(0.20 0.04 152);
+    --loss: oklch(0.70 0.20 25);
+    --loss-foreground: oklch(0.12 0 0);
+    --loss-muted: oklch(0.20 0.04 25);
+    --warning: oklch(0.78 0.15 68);
+    --warning-foreground: oklch(0.12 0.02 50);
+    --warning-muted: oklch(0.22 0.04 68);
+}
+
+/* Light mode */
+.light {
+    --background: oklch(0.97 0.003 220);
+    --foreground: oklch(0.15 0.015 220);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.15 0.015 220);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.15 0.015 220);
+
+    --primary: oklch(0.52 0.16 195);
+    --primary-foreground: oklch(0.97 0.003 220);
+
+    --secondary: oklch(0.94 0.008 220);
+    --secondary-foreground: oklch(0.20 0.015 220);
+    --muted: oklch(0.95 0.005 220);
+    --muted-foreground: oklch(0.45 0.015 220);
+    --accent: oklch(0.94 0.02 195);
+    --accent-foreground: oklch(0.20 0.015 220);
+    --destructive: oklch(0.577 0.245 27.33);
+
+    --border: oklch(0.88 0.006 220);
+    --input: oklch(0.88 0.006 220);
+    --ring: oklch(0.52 0.16 195);
+
+    --chart-1: oklch(0.52 0.16 195);
+    --chart-2: oklch(0.45 0.15 152);
+    --chart-3: oklch(0.68 0.17 68);
+    --chart-4: oklch(0.54 0.22 305);
+    --chart-5: oklch(0.60 0.21 22);
+    --chart-6: oklch(0.50 0.18 250);
+    --chart-7: oklch(0.55 0.20 340);
+    --chart-8: oklch(0.58 0.14 130);
+
+    --profit: oklch(0.45 0.15 152);
+    --profit-foreground: oklch(0.97 0 0);
+    --profit-muted: oklch(0.94 0.05 152);
+    --loss: oklch(0.577 0.245 27.33);
+    --loss-foreground: oklch(0.97 0 0);
+    --loss-muted: oklch(0.95 0.04 25);
+    --warning: oklch(0.68 0.17 68);
+    --warning-foreground: oklch(0.21 0.02 50);
+    --warning-muted: oklch(0.95 0.04 68);
+}
+
+@layer base {
+    * {
+        @apply border-border outline-ring/50;
+    }
+    body {
+        @apply bg-background text-foreground;
+    }
 }

@@ -3,13 +3,34 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsc-watch --onSuccess \"node ./dist/microservices/api/index.js\"",
     "dev:bot": "tsx watch microservices/bot-engine/index.ts",
     "dev:collector": "tsx watch microservices/data-collector/index.ts",
     "dev:api": "tsx watch microservices/api/index.ts",
+    "build": "rimraf dist && tsc",
+    "start": "node ./dist/microservices/api/index.js",
+    "script:generate-reset-sql": "ts-node ./scripts/generate-reset-sql.ts",
+    "script:add-strategies": "ts-node ./scripts/add-strategies.ts",
+    "script:seed-test-data": "ts-node ./scripts/seed-test-data.ts",
+    "script:setup-vault": "ts-node ./scripts/setup-vault.ts",
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@trident/common": "workspace:*"
+    "@trident/common": "workspace:*",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "drizzle-orm": "^0.45.1",
+    "express": "^5.1.0",
+    "postgres": "^3.4.5",
+    "yup": "^1.7.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.3.0",
+    "rimraf": "^6.0.1",
+    "tsc-watch": "^7.1.1",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.2"
   }
 }
