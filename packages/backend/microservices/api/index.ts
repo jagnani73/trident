@@ -1,7 +1,8 @@
 import { vaultRouter } from "./vault/vault.routes";
 import { metricsRouter } from "./metrics/metrics.routes";
 import { botRouter } from "./bot/bot.routes";
-import { DatabaseService, LoggerService } from "../../services";
+import { DatabaseService } from "../../services/database.service";
+import { LoggerService } from "../../services/logger.service";
 import { CORS_CONFIG } from "../../utils/constants";
 import { type AppError, convertToAppError, ErrorScope } from "@trident/common/errors";
 import cors from "cors";
@@ -62,7 +63,15 @@ app.use((error: Error | unknown, _req: Request, res: Response, _next: NextFuncti
 (async () => {
     const log = logger.scoped("init");
     try {
-        await Promise.all([DatabaseService.init()]);
+        await DatabaseService.init();
+        try {
+            const { DriftService } = await import("../../services/drift.service");
+            await DriftService.init();
+        } catch (_error) {
+            log.warn("drift-init-skipped", {
+                message: "DriftService failed to load, running without Drift",
+            });
+        }
         const env: string = process.env.NODE_ENV || "development";
         const port: number = +(process.env.PORT || 8000);
         server.listen(port, () => {

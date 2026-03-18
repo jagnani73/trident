@@ -16,7 +16,10 @@
         "lint": "tsc --noEmit && eslint ."
     },
     "dependencies": {
+        "@drift-labs/sdk": "2.160.0-beta.1",
+        "@solana/web3.js": "1.98.0",
         "@trident/common": "workspace:*",
+        "bn.js": "^5.2.3",
         "cors": "^2.8.5",
         "dotenv": "^17.2.1",
         "drizzle-orm": "^0.45.1",
@@ -25,6 +28,7 @@
         "yup": "^1.7.0"
     },
     "devDependencies": {
+        "@types/bn.js": "^5.2.0",
         "@types/cors": "^2.8.19",
         "@types/express": "^5.0.3",
         "@types/node": "^24.3.0",

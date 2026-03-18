@@ -1,6 +1,31 @@
 import type { CorsOptions } from "cors";
 import "dotenv/config";
 
+export const BOT_CONFIG = {
+    TICK_INTERVAL_MS: 30_000,
+    SPREAD_ENTRY_Z_SCORE: 2.0,
+    SPREAD_EXIT_Z_SCORE: 0.5,
+    FUNDING_ENTRY_THRESHOLD: 0.15,
+    MAX_DRAWDOWN_PCT: 0.05,
+    MAX_SPREAD_ALLOCATION: 0.4,
+    MAX_BASIS_ALLOCATION: 0.3,
+    MIN_LENDING_ALLOCATION: 0.3,
+} as const;
+
+/** Perp market indexes on Drift */
+export const PERP_MARKETS = {
+    SOL: 0,
+    BTC: 1,
+    ETH: 2,
+} as const;
+
+/** Spot market indexes on Drift */
+export const SPOT_MARKETS = {
+    USDC: 0,
+    SOL: 1,
+    ETH: 4,
+} as const;
+
 export const CORS_CONFIG = (): CorsOptions => {
     const origins: (string | RegExp)[] = [];
 
@@ -27,14 +52,3 @@ export const CORS_CONFIG = (): CorsOptions => {
         optionsSuccessStatus: 200,
     };
 };
-
-export const BOT_CONFIG = {
-    TICK_INTERVAL_MS: 30_000,
-    SPREAD_ENTRY_Z_SCORE: 2.0,
-    SPREAD_EXIT_Z_SCORE: 0.5,
-    FUNDING_ENTRY_THRESHOLD: 0.15,
-    MAX_DRAWDOWN_PCT: 0.05,
-    MAX_SPREAD_ALLOCATION: 0.4,
-    MAX_BASIS_ALLOCATION: 0.3,
-    MIN_LENDING_ALLOCATION: 0.3,
-} as const;

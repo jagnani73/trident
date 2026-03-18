@@ -1,4 +1,4 @@
-import { LoggerService } from "../../../services";
+import { LoggerService } from "../../../services/logger.service";
 
 const logger = LoggerService.scoped("vaultService");
 
