@@ -4,9 +4,9 @@
     "private": true,
     "scripts": {
         "dev": "tsc-watch --onSuccess \"node ./dist/microservices/api/index.js\"",
-        "dev:bot": "tsx watch microservices/bot-engine/index.ts",
-        "dev:collector": "tsx watch microservices/data-collector/index.ts",
-        "dev:api": "tsx watch microservices/api/index.ts",
+        "dev:bot": "cross-env NODE_OPTIONS=\"--require ./utils/patch-native-bindings.cjs\" tsx watch microservices/bot-engine/index.ts",
+        "dev:collector": "cross-env NODE_OPTIONS=\"--require ./utils/patch-native-bindings.cjs\" tsx watch microservices/data-collector/index.ts",
+        "dev:api": "cross-env NODE_OPTIONS=\"--require ./utils/patch-native-bindings.cjs\" tsx watch microservices/api/index.ts",
         "build": "rimraf dist && tsc",
         "start": "node ./dist/microservices/api/index.js",
         "script:generate-reset-sql": "ts-node ./scripts/generate-reset-sql.ts",

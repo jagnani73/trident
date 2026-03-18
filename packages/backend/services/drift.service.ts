@@ -8,7 +8,6 @@ import type {
 import {
     BASE_PRECISION,
     BulkAccountLoader,
-    calculateAllEstimatedFundingRate,
     calculatePositionPNL,
     calculateReservePrice,
     convertToNumber,
@@ -21,6 +20,8 @@ import {
     Wallet,
 } from "@drift-labs/sdk";
 import { Connection, Keypair } from "@solana/web3.js";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const bs58 = require("bs58") as { decode: (input: string) => Uint8Array };
 import BN from "bn.js";
 import "dotenv/config";
 import { PERP_MARKETS, SPOT_MARKETS } from "../utils/constants";
@@ -62,7 +63,10 @@ export class DriftService {
         }
 
         try {
-            const keypair = Keypair.fromSecretKey(Uint8Array.from(JSON.parse(privateKey)));
+            const secretKey = privateKey.startsWith("[")
+                ? Uint8Array.from(JSON.parse(privateKey))
+                : bs58.decode(privateKey);
+            const keypair = Keypair.fromSecretKey(secretKey);
             const wallet = new Wallet(keypair);
             const connection = new Connection(rpcUrl, "confirmed");
             const bulkAccountLoader = new BulkAccountLoader(connection, "confirmed", 10_000);
@@ -115,22 +119,32 @@ export class DriftService {
         return convertToNumber(oracle.price, PRICE_PRECISION);
     }
 
+    private static getMMOracle(marketIndex: number) {
+        const oracle = this.getClient().getOracleDataForPerpMarket(marketIndex);
+        return { ...oracle, isMMOracleActive: false };
+    }
+
     static getMarkPrice(marketIndex: number): number {
         const market = this.getPerpMarket(marketIndex);
-        const mmOracle = this.getClient().getMMOracleDataForPerpMarket(marketIndex);
-        return convertToNumber(calculateReservePrice(market, mmOracle), PRICE_PRECISION);
+        return convertToNumber(calculateReservePrice(market, this.getMMOracle(marketIndex)), PRICE_PRECISION);
     }
 
     // ── Funding Rates ────────────────────────────────────────────
 
     static getFundingRate(marketIndex: number, symbol: string): FundingRateInfo {
         const market = this.getPerpMarket(marketIndex);
-        const mmOracle = this.getClient().getMMOracleDataForPerpMarket(marketIndex);
+        const oraclePrice = this.getOraclePriceNumber(marketIndex);
 
-        const [longFunding] = calculateAllEstimatedFundingRate(market, mmOracle);
-        const fundingRate = convertToNumber(longFunding, FUNDING_RATE_PRECISION);
-        const oraclePrice = convertToNumber(mmOracle.price, PRICE_PRECISION);
-        const markPrice = convertToNumber(calculateReservePrice(market, mmOracle), PRICE_PRECISION);
+        // Use last settled funding rate from market account (always available)
+        // instead of calculateAllEstimatedFundingRate which needs oracle TWAP
+        // subscriptions that BulkAccountLoader doesn't provide
+        const fundingRate = convertToNumber(
+            market.amm.lastFundingRate,
+            FUNDING_RATE_PRECISION,
+        );
+        const markPrice = oraclePrice > 0
+            ? convertToNumber(calculateReservePrice(market, this.getMMOracle(marketIndex)), PRICE_PRECISION)
+            : 0;
         const fundingRateApr = oraclePrice > 0 ? (fundingRate / oraclePrice) * 24 * 365 * 100 : 0;
 
         return {

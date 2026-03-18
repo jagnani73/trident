@@ -1,6 +1,8 @@
 import type { CorsOptions } from "cors";
 import "dotenv/config";
 
+import type { PerpMarketKey } from "./types/services.types";
+
 export const BOT_CONFIG = {
     TICK_INTERVAL_MS: 30_000,
     SPREAD_ENTRY_Z_SCORE: 2.0,
@@ -25,6 +27,12 @@ export const SPOT_MARKETS = {
     SOL: 1,
     ETH: 4,
 } as const;
+
+/** Spread pairs to track for mean-reversion strategy */
+export const SPREAD_PAIRS: Array<{ symbolA: PerpMarketKey; symbolB: PerpMarketKey }> = [
+    { symbolA: "SOL", symbolB: "ETH" },
+    { symbolA: "BTC", symbolB: "ETH" },
+];
 
 export const CORS_CONFIG = (): CorsOptions => {
     const origins: (string | RegExp)[] = [];

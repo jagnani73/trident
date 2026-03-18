@@ -1,10 +1,17 @@
-import { LoggerService } from "./logger.service";
 import "dotenv/config";
+import type { drizzle } from "drizzle-orm/postgres-js";
+import { LoggerService } from "./logger.service";
 
 const logger = LoggerService.scoped("database");
 
 export class DatabaseService {
     private static initialized = false;
+    private static db: ReturnType<typeof drizzle> | null = null;
+
+    static getDb(): ReturnType<typeof drizzle> {
+        if (!this.db) throw new Error("DatabaseService not initialized — call init() first");
+        return this.db;
+    }
 
     static async init(): Promise<void> {
         if (this.initialized) return;
@@ -25,7 +32,7 @@ export class DatabaseService {
             const { drizzle } = await import("drizzle-orm/postgres-js");
 
             const client = postgres(url);
-            const _db = drizzle(client);
+            this.db = drizzle(client);
 
             this.initialized = true;
             log.info("connected");
