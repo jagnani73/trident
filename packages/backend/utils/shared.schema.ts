@@ -10,9 +10,7 @@ const queryNumber = (integer: boolean, min?: number, max?: number) => {
         .string()
         .test(
             "is-number",
-            integer
-                ? "${path} must be a valid integer"
-                : "${path} must be a valid number",
+            integer ? "${path} must be a valid integer" : "${path} must be a valid number",
             (val) =>
                 val === undefined ||
                 (val !== "" &&
@@ -38,8 +36,6 @@ const queryNumber = (integer: boolean, min?: number, max?: number) => {
     return schema;
 };
 
-export const queryInteger = (min?: number, max?: number) =>
-    queryNumber(true, min, max);
+export const queryInteger = (min?: number, max?: number) => queryNumber(true, min, max);
 
-export const queryNumeric = (min?: number, max?: number) =>
-    queryNumber(false, min, max);
+export const queryNumeric = (min?: number, max?: number) => queryNumber(false, min, max);

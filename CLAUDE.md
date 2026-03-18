@@ -42,6 +42,7 @@ packages/
 ## Tech Stack
 
 ### Backend (TypeScript)
+
 - `@drift-labs/sdk` — Drift protocol interaction
 - `@voltr/vault-sdk` — Ranger vault management
 - `@solana/web3.js` — Solana base
@@ -50,13 +51,16 @@ packages/
 - `pino` — logging
 
 ### Frontend (TypeScript)
+
 - Next.js 15 (App Router) + Tailwind CSS v4
 - `recharts` or `lightweight-charts` — performance charts
 
 ### Backtester (Python)
+
 - `pandas`, `numpy`, `matplotlib`/`plotly`
 
 ### Infrastructure
+
 - PostgreSQL 16 (Docker Compose, dev mode)
 - Helius RPC (free Dev Plan — hackathon perk)
 - Solana devnet (testing) → mainnet (live trading window)
@@ -66,11 +70,13 @@ packages/
 ORM schema is auto-generated. **Never edit `packages/common/database/` manually.**
 
 **Workflow for schema changes:**
+
 1. Write migration SQL in `packages/backend/db-migrations/`
 2. Apply migration to DB
 3. Run `pnpm build:common` — drizzle-kit pull regenerates schema
 
 ### Tables
+
 - `funding_rate_snapshots` — cached Drift funding rates
 - `spread_snapshots` — computed pair spread ratios + z-scores
 - `positions` — active/historical spread and basis positions

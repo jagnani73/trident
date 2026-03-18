@@ -1,16 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { type NextFunction, type Request, type Response } from "express";
-import {
-    type ObjectSchema,
-    type ValidationError as _ValidationError,
-} from "yup";
+import { type ObjectSchema, type ValidationError as _ValidationError } from "yup";
 
 type RequestLocations = "query" | "body" | "params" | "headers";
 
-export const validateQuery = (
-    location: RequestLocations,
-    schema: ObjectSchema<any>,
-) => {
+export const validateQuery = (location: RequestLocations, schema: ObjectSchema<any>) => {
     return async (req: Request, res: Response, next: NextFunction) => {
         let _location;
         switch (location) {

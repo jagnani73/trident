@@ -48,23 +48,16 @@ app.use("/*splat", (_req: Request, res: Response) => {
     });
 });
 
-app.use(
-    (
-        error: Error | unknown,
-        _req: Request,
-        res: Response,
-        _next: NextFunction,
-    ) => {
-        const appError: AppError = convertToAppError(error, ErrorScope.HTTP);
-        const log = LoggerService.scoped("http:error");
-        log.error("unhandled-error", { error: appError.toLog() });
+app.use((error: Error | unknown, _req: Request, res: Response, _next: NextFunction) => {
+    const appError: AppError = convertToAppError(error, ErrorScope.HTTP);
+    const log = LoggerService.scoped("http:error");
+    log.error("unhandled-error", { error: appError.toLog() });
 
-        res.status(appError.code).json({
-            success: false,
-            data: appError.toPublic(),
-        });
-    },
-);
+    res.status(appError.code).json({
+        success: false,
+        data: appError.toPublic(),
+    });
+});
 
 (async () => {
     const log = logger.scoped("init");

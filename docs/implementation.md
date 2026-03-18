@@ -103,6 +103,7 @@ ranger/
 **Purpose:** Single source of truth for types, constants, and pure utilities shared across backend microservices and frontend.
 
 **Key contents:**
+
 - **Types:** Vault state, Drift market data, strategy allocation state, bot signals, config schemas
 - **Constants:** Drift perp market indexes, Ranger adaptor program IDs, default risk parameters, spread pair definitions (SOL/ETH, BTC/ETH, SOL/BTC)
 - **Utils:** Z-score calculation, annualized funding rate conversion, PnL computation, time-based helpers
@@ -120,6 +121,7 @@ Each microservice is independently runnable with its own entry point.
 ##### `bot-engine` — The Brain
 
 **What it does:** Runs the main decision loop. Every tick (configurable interval, ~30-60s):
+
 1. Fetches current vault state (positions, balances, allocations)
 2. Fetches live market data (funding rates, perp prices, spread ratios)
 3. Runs spread detector — any high-confidence spread opportunities?
@@ -129,6 +131,7 @@ Each microservice is independently runnable with its own entry point.
 7. Executes on-chain transactions via Ranger vault SDK + Drift adaptor
 
 **Key decisions per tick:**
+
 - Which layer should each dollar be in? (lending / spread / basis / idle)
 - Should we open a new position? (spread or basis)
 - Should we close an existing position? (target hit, stop-loss, convergence)
@@ -139,6 +142,7 @@ Each microservice is independently runnable with its own entry point.
 ##### `data-collector` — Data Ingestion
 
 **What it does:** Continuously ingests and caches market data from Drift.
+
 - Polls Drift Data API for funding rates (per market, every 1h)
 - Streams perp mark prices via Drift SDK subscriptions
 - Computes and caches spread ratios for configured pairs
@@ -150,6 +154,7 @@ Each microservice is independently runnable with its own entry point.
 ##### `api` — REST API
 
 **What it does:** Serves vault metrics and bot state to the frontend dashboard.
+
 - `GET /vault/state` — current vault TVL, allocations per layer, LP share price
 - `GET /vault/positions` — active spread/basis positions with entry price, PnL, age
 - `GET /vault/history` — historical performance, APY over time, drawdown chart data
@@ -168,6 +173,7 @@ These are not standalone — they're imported by microservices.
 ##### `drift/` — Drift SDK Wrapper
 
 Wraps `@drift-labs/sdk` into a clean interface:
+
 - `initializeDriftClient()` — connection setup, wallet, subscription
 - `getFundingRate(marketIndex)` — current + historical funding
 - `getMarkPrice(marketIndex)` — perp mark price
@@ -183,6 +189,7 @@ Handles connection management, retries, and error normalization.
 ##### `ranger-vault/` — Ranger Vault SDK Wrapper
 
 Wraps `@voltr/vault-sdk`:
+
 - `initializeVault(config)` — one-time vault creation
 - `addAdaptor(adaptorId)` — register Drift/Lending adaptor
 - `initializeStrategy(adaptor, market)` — activate a strategy slot
@@ -194,6 +201,7 @@ Wraps `@voltr/vault-sdk`:
 ##### `spread-detector/` — Spread Opportunity Detection
 
 Core alpha logic:
+
 - Maintains rolling window of price ratios for configured pairs (e.g., SOL-PERP / ETH-PERP)
 - Computes z-score of current ratio vs rolling mean
 - Emits signal when |z-score| exceeds entry threshold (e.g., > 2.0)
@@ -213,6 +221,7 @@ Core alpha logic:
 ##### `risk-manager/` — Portfolio Risk
 
 Enforces hard limits:
+
 - **Max drawdown:** If vault NAV drops X% from high-water mark → emergency exit all alpha positions to lending
 - **Position limits:** Max % of vault in spread trades, max % in basis trades, min % in lending
 - **Per-position stop-loss:** Individual spread/basis position max loss before forced close
@@ -223,12 +232,14 @@ Enforces hard limits:
 ##### `capital-allocator/` — Layer Selection
 
 The orchestrator that takes signals from spread-detector, funding-monitor, and risk-manager, then decides:
+
 1. How much capital in each layer (lending / spread / basis)
 2. Which specific positions to open/close
 3. Sizing for new positions (Kelly criterion or fixed fractional)
 4. Priority when multiple signals compete for capital
 
 Decision hierarchy:
+
 ```
 Risk Manager (veto power)
   └─ If drawdown limit hit → everything to lending
@@ -249,6 +260,7 @@ Capital Allocator (within risk bounds)
 **Framework:** Next.js 15 App Router + Tailwind CSS
 
 **Pages:**
+
 - **Dashboard (/)** — overview: vault TVL, current APY, active strategy mode, allocation pie chart
 - **Positions (/positions)** — table of active spread/basis positions with live PnL, entry time, z-score/funding at entry
 - **Performance (/performance)** — historical APY chart, cumulative PnL, drawdown chart, comparison vs pure lending
@@ -268,11 +280,13 @@ Capital Allocator (within risk bounds)
 **Components:**
 
 #### Data Loaders (`src/data/`)
+
 - `drift_s3_loader.py` — downloads historical CSVs from Drift's S3 bucket (funding rates, trades, prices)
 - `pyth_loader.py` — fetches oracle price history from Pyth Benchmarks API
 - `cache.py` — local file cache to avoid re-downloading
 
 #### Strategy Implementations (`src/strategies/`)
+
 - `lending_only.py` — baseline: 100% Drift USDC lending
 - `basis_only.py` — baseline: pure funding rate basis trading
 - `spread_only.py` — baseline: pure spread mean-reversion
@@ -280,11 +294,13 @@ Capital Allocator (within risk bounds)
 - Each strategy implements a common interface: `on_tick(market_state) → List[Action]`
 
 #### Engine (`src/engine/`)
+
 - `simulator.py` — feeds historical data tick-by-tick through strategy, tracks portfolio state
 - `portfolio.py` — tracks positions, PnL, fees, NAV over time
 - `metrics.py` — computes APY, Sharpe, max drawdown, win rate, profit factor
 
 #### Analysis (`src/analysis/`)
+
 - `report.py` — generates performance summary with charts (matplotlib/plotly)
 - `parameter_sweep.py` — grid search over z-score thresholds, funding thresholds, allocation limits
 - `comparison.py` — side-by-side comparison of hybrid vs baselines
@@ -300,23 +316,33 @@ We need persistent storage for historical data caching and bot state tracking. U
 ### Tables
 
 #### `funding_rate_snapshots`
+
 Cached funding rates from Drift for backtesting and monitoring.
+
 - `id`, `market_index`, `funding_rate`, `oracle_price`, `mark_price`, `timestamp`, `created_at`
 
 #### `spread_snapshots`
+
 Computed spread ratios between configured pairs.
+
 - `id`, `pair_name` (e.g., "SOL_ETH"), `ratio`, `z_score`, `market_a_price`, `market_b_price`, `timestamp`, `created_at`
 
 #### `positions`
+
 Active and historical vault positions (spread trades, basis trades).
+
 - `id`, `type` (spread/basis), `status` (open/closed), `market_a_index`, `market_b_index` (null for basis), `side_a`, `side_b`, `size_usdc`, `entry_price_a`, `entry_price_b`, `exit_price_a`, `exit_price_b`, `entry_z_score`, `exit_z_score`, `realized_pnl`, `opened_at`, `closed_at`, `close_reason`
 
 #### `vault_snapshots`
+
 Periodic vault state snapshots for charting.
+
 - `id`, `total_value_usdc`, `lending_allocation`, `spread_allocation`, `basis_allocation`, `idle_allocation`, `lp_share_price`, `apy_24h`, `apy_7d`, `drawdown_from_hwm`, `timestamp`
 
 #### `bot_events`
+
 Audit log of bot decisions for debugging.
+
 - `id`, `event_type` (tick/open_position/close_position/rebalance/emergency_exit/error), `details` (JSONB), `timestamp`
 
 ### ORM
@@ -328,18 +354,21 @@ Drizzle ORM with `drizzle-kit` for migrations. Schema auto-generated into `packa
 ## Infrastructure
 
 ### Local Development
+
 - **Docker Compose:** PostgreSQL 16
 - **Solana:** Devnet for vault/strategy testing (free)
 - **RPC:** Helius free Dev Plan (hackathon perk) or Alchemy free tier
 - **Bot:** Runs locally via `pnpm dev` (ts-node / tsx)
 
 ### Production (Hackathon Window)
+
 - **Bot + API:** Local machine or AWS free tier EC2
 - **Database:** Docker PostgreSQL (local) or Supabase free tier
 - **Frontend:** Vercel free tier
 - **Vault:** Solana mainnet (real trades required for submission)
 
 ### Environment Variables
+
 ```
 # Solana
 SOLANA_RPC_URL=           # Helius/Alchemy endpoint
@@ -374,6 +403,7 @@ MIN_LENDING_ALLOCATION=   # 0.30 (30% floor)
 ## Implementation Phases
 
 ### Phase 1: Foundation (Days 1-3)
+
 **Goal:** Monorepo scaffolding, SDK wrappers, database, basic bot loop.
 
 1. Initialize pnpm monorepo with workspace config
@@ -386,6 +416,7 @@ MIN_LENDING_ALLOCATION=   # 0.30 (30% floor)
 8. Build minimal bot-engine — tick loop that reads data and logs decisions (no trading yet)
 
 ### Phase 2: Data Pipeline + Backtester (Days 4-7)
+
 **Goal:** Historical data ingestion, backtesting framework, parameter calibration.
 
 1. Build `data-collector` microservice — poll Drift API, store snapshots in DB
@@ -397,6 +428,7 @@ MIN_LENDING_ALLOCATION=   # 0.30 (30% floor)
 7. Export calibrated params to bot config
 
 ### Phase 3: Strategy Logic (Days 8-12)
+
 **Goal:** Live spread detection, funding monitoring, capital allocation, risk management.
 
 1. Build `spread-detector` service — rolling window, z-score, entry/exit signals
@@ -407,6 +439,7 @@ MIN_LENDING_ALLOCATION=   # 0.30 (30% floor)
 6. Test on devnet with small positions
 
 ### Phase 4: Execution + On-Chain (Days 13-16)
+
 **Goal:** Real on-chain execution via Ranger vault + Drift.
 
 1. Initialize Ranger vault on mainnet via setup script
@@ -417,6 +450,7 @@ MIN_LENDING_ALLOCATION=   # 0.30 (30% floor)
 6. Monitor and tune parameters based on live behavior
 
 ### Phase 5: Dashboard (Days 14-17)
+
 **Goal:** Frontend monitoring dashboard for demo video.
 
 1. Create design system doc
@@ -428,6 +462,7 @@ MIN_LENDING_ALLOCATION=   # 0.30 (30% floor)
 7. Polish for demo video
 
 ### Phase 6: Submission Prep (Days 17-19)
+
 **Goal:** Documentation, video, final submission.
 
 1. Write strategy documentation (strategy.md → formatted for submission)
@@ -442,6 +477,7 @@ MIN_LENDING_ALLOCATION=   # 0.30 (30% floor)
 ## Key Dependencies
 
 ### TypeScript (Backend + Common)
+
 - `@drift-labs/sdk` — Drift protocol interaction
 - `@voltr/vault-sdk` — Ranger vault management
 - `@solana/web3.js` — Solana base
@@ -454,12 +490,14 @@ MIN_LENDING_ALLOCATION=   # 0.30 (30% floor)
 - `tsx` — dev runner
 
 ### TypeScript (Frontend)
+
 - `next` 15 — framework
 - `tailwindcss` v4 — styling
 - `recharts` or `lightweight-charts` — performance charts
 - `swr` or `@tanstack/react-query` — data fetching
 
 ### Python (Backtester)
+
 - `pandas` — data manipulation
 - `numpy` — math
 - `matplotlib` / `plotly` — visualization
@@ -470,12 +508,12 @@ MIN_LENDING_ALLOCATION=   # 0.30 (30% floor)
 
 ## Risk Mitigations (Technical)
 
-| Risk | Mitigation |
-|------|------------|
-| Drift SDK connection drops | Auto-reconnect with exponential backoff in drift service |
-| Bot crashes mid-position | Positions persist in DB; bot resumes from last known state on restart |
-| Spread diverges further instead of reverting | Per-position stop-loss + max position age in risk manager |
-| Funding rate flips negative during basis trade | Funding monitor triggers exit signal; risk manager enforces |
-| Vault health drops near 1.05 | Health floor set at 1.20; emergency exit well before disqualification |
-| RPC rate limits | Use Helius Dev Plan; fallback to Alchemy; request batching |
-| Transaction failures | Retry with priority fee escalation; log failures for manual review |
+| Risk                                           | Mitigation                                                            |
+| ---------------------------------------------- | --------------------------------------------------------------------- |
+| Drift SDK connection drops                     | Auto-reconnect with exponential backoff in drift service              |
+| Bot crashes mid-position                       | Positions persist in DB; bot resumes from last known state on restart |
+| Spread diverges further instead of reverting   | Per-position stop-loss + max position age in risk manager             |
+| Funding rate flips negative during basis trade | Funding monitor triggers exit signal; risk manager enforces           |
+| Vault health drops near 1.05                   | Health floor set at 1.20; emergency exit well before disqualification |
+| RPC rate limits                                | Use Helius Dev Plan; fallback to Alchemy; request batching            |
+| Transaction failures                           | Retry with priority fee escalation; log failures for manual review    |

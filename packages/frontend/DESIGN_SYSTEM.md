@@ -7,14 +7,14 @@
 
 ## 1. Brand Identity
 
-| Attribute    | Value                                                               |
-| ------------ | ------------------------------------------------------------------- |
-| Product Name | Trident                                                             |
-| Product Type | Vault Strategy Dashboard (DeFi / Solana)                            |
-| Industry     | Crypto / Quantitative Trading / Yield Optimization                  |
-| Aesthetic    | Dark-first, trading terminal, data-dense. Clean, precise, technical.|
-| Personality  | Sharp, analytical, trustworthy                                      |
-| Target User  | Vault managers, strategy operators, hackathon judges                |
+| Attribute    | Value                                                                |
+| ------------ | -------------------------------------------------------------------- |
+| Product Name | Trident                                                              |
+| Product Type | Vault Strategy Dashboard (DeFi / Solana)                             |
+| Industry     | Crypto / Quantitative Trading / Yield Optimization                   |
+| Aesthetic    | Dark-first, trading terminal, data-dense. Clean, precise, technical. |
+| Personality  | Sharp, analytical, trustworthy                                       |
+| Target User  | Vault managers, strategy operators, hackathon judges                 |
 
 The UI should feel like a professional trading terminal — think Bloomberg Terminal meets modern web. Dark backgrounds, monospace numbers, real-time data updates. Not a marketing page.
 
@@ -43,7 +43,7 @@ Cyan/teal-based. **Dark mode is the default** (trading terminal convention). Lig
 --secondary: oklch(0.22 0.01 220);
 --secondary-foreground: oklch(0.93 0.005 220);
 --muted: oklch(0.22 0.012 220);
---muted-foreground: oklch(0.60 0.015 220);
+--muted-foreground: oklch(0.6 0.015 220);
 --accent: oklch(0.22 0.025 195);
 --accent-foreground: oklch(0.93 0.005 220);
 --destructive: oklch(0.65 0.22 25);
@@ -69,11 +69,11 @@ Cyan/teal-based. **Dark mode is the default** (trading terminal convention). Lig
 --primary-foreground: oklch(0.97 0.003 220);
 
 --secondary: oklch(0.94 0.008 220);
---secondary-foreground: oklch(0.20 0.015 220);
+--secondary-foreground: oklch(0.2 0.015 220);
 --muted: oklch(0.95 0.005 220);
 --muted-foreground: oklch(0.45 0.015 220);
 --accent: oklch(0.94 0.02 195);
---accent-foreground: oklch(0.20 0.015 220);
+--accent-foreground: oklch(0.2 0.015 220);
 --destructive: oklch(0.577 0.245 27.33);
 
 --border: oklch(0.88 0.006 220);
@@ -85,41 +85,41 @@ Cyan/teal-based. **Dark mode is the default** (trading terminal convention). Lig
 
 Custom tokens for financial/trading data. Defined in both modes.
 
-| Token                  | Dark                       | Light                      | Usage                        |
-| ---------------------- | -------------------------- | -------------------------- | ---------------------------- |
-| `--profit`             | `oklch(0.72 0.18 152)`    | `oklch(0.45 0.15 152)`    | Profit, positive PnL, green  |
-| `--profit-foreground`  | `oklch(0.12 0 0)`         | `oklch(0.97 0 0)`         | Text on profit bg            |
-| `--profit-muted`       | `oklch(0.20 0.04 152)`    | `oklch(0.94 0.05 152)`    | Badge/cell bg                |
-| `--loss`               | `oklch(0.70 0.20 25)`     | `oklch(0.577 0.245 27.33)`| Loss, negative PnL, red     |
-| `--loss-foreground`    | `oklch(0.12 0 0)`         | `oklch(0.97 0 0)`         | Text on loss bg              |
-| `--loss-muted`         | `oklch(0.20 0.04 25)`     | `oklch(0.95 0.04 25)`     | Badge/cell bg                |
-| `--warning`            | `oklch(0.78 0.15 68)`     | `oklch(0.68 0.17 68)`     | Caution, near-threshold      |
-| `--warning-foreground` | `oklch(0.12 0.02 50)`     | `oklch(0.21 0.02 50)`     | Text on warning bg           |
-| `--warning-muted`      | `oklch(0.22 0.04 68)`     | `oklch(0.95 0.04 68)`     | Badge/cell bg                |
+| Token                  | Dark                   | Light                      | Usage                       |
+| ---------------------- | ---------------------- | -------------------------- | --------------------------- |
+| `--profit`             | `oklch(0.72 0.18 152)` | `oklch(0.45 0.15 152)`     | Profit, positive PnL, green |
+| `--profit-foreground`  | `oklch(0.12 0 0)`      | `oklch(0.97 0 0)`          | Text on profit bg           |
+| `--profit-muted`       | `oklch(0.20 0.04 152)` | `oklch(0.94 0.05 152)`     | Badge/cell bg               |
+| `--loss`               | `oklch(0.70 0.20 25)`  | `oklch(0.577 0.245 27.33)` | Loss, negative PnL, red     |
+| `--loss-foreground`    | `oklch(0.12 0 0)`      | `oklch(0.97 0 0)`          | Text on loss bg             |
+| `--loss-muted`         | `oklch(0.20 0.04 25)`  | `oklch(0.95 0.04 25)`      | Badge/cell bg               |
+| `--warning`            | `oklch(0.78 0.15 68)`  | `oklch(0.68 0.17 68)`      | Caution, near-threshold     |
+| `--warning-foreground` | `oklch(0.12 0.02 50)`  | `oklch(0.21 0.02 50)`      | Text on warning bg          |
+| `--warning-muted`      | `oklch(0.22 0.04 68)`  | `oklch(0.95 0.04 68)`      | Badge/cell bg               |
 
 Use as: `text-profit`, `bg-profit-muted`, `text-loss`, etc.
 
 ### Chart Palette (8 colors)
 
-| Token       | Dark                      | Light                     | Visual            |
-| ----------- | ------------------------- | ------------------------- | ----------------- |
-| `--chart-1` | `oklch(0.72 0.14 195)`   | `oklch(0.52 0.16 195)`   | Cyan (primary)    |
-| `--chart-2` | `oklch(0.70 0.18 152)`   | `oklch(0.45 0.15 152)`   | Green (profit)    |
-| `--chart-3` | `oklch(0.78 0.15 68)`    | `oklch(0.68 0.17 68)`    | Amber             |
-| `--chart-4` | `oklch(0.65 0.18 305)`   | `oklch(0.54 0.22 305)`   | Purple            |
-| `--chart-5` | `oklch(0.70 0.20 25)`    | `oklch(0.60 0.21 22)`    | Coral/Red         |
-| `--chart-6` | `oklch(0.68 0.14 250)`   | `oklch(0.50 0.18 250)`   | Blue              |
-| `--chart-7` | `oklch(0.66 0.16 340)`   | `oklch(0.55 0.20 340)`   | Rose              |
-| `--chart-8` | `oklch(0.68 0.12 130)`   | `oklch(0.58 0.14 130)`   | Olive             |
+| Token       | Dark                   | Light                  | Visual         |
+| ----------- | ---------------------- | ---------------------- | -------------- |
+| `--chart-1` | `oklch(0.72 0.14 195)` | `oklch(0.52 0.16 195)` | Cyan (primary) |
+| `--chart-2` | `oklch(0.70 0.18 152)` | `oklch(0.45 0.15 152)` | Green (profit) |
+| `--chart-3` | `oklch(0.78 0.15 68)`  | `oklch(0.68 0.17 68)`  | Amber          |
+| `--chart-4` | `oklch(0.65 0.18 305)` | `oklch(0.54 0.22 305)` | Purple         |
+| `--chart-5` | `oklch(0.70 0.20 25)`  | `oklch(0.60 0.21 22)`  | Coral/Red      |
+| `--chart-6` | `oklch(0.68 0.14 250)` | `oklch(0.50 0.18 250)` | Blue           |
+| `--chart-7` | `oklch(0.66 0.16 340)` | `oklch(0.55 0.20 340)` | Rose           |
+| `--chart-8` | `oklch(0.68 0.12 130)` | `oklch(0.58 0.14 130)` | Olive          |
 
 ### Strategy Layer Colors
 
-| Layer   | Color       | Token      |
-| ------- | ----------- | ---------- |
-| Lending | `chart-1`   | Cyan       |
-| Spread  | `chart-4`   | Purple     |
-| Basis   | `chart-6`   | Blue       |
-| Idle    | `muted`     | Gray       |
+| Layer   | Color     | Token  |
+| ------- | --------- | ------ |
+| Lending | `chart-1` | Cyan   |
+| Spread  | `chart-4` | Purple |
+| Basis   | `chart-6` | Blue   |
+| Idle    | `muted`   | Gray   |
 
 ---
 
@@ -132,16 +132,16 @@ Use as: `text-profit`, `bg-profit-muted`, `text-loss`, etc.
 
 ### Type Scale (Compact)
 
-| Token                | Size        | Weight          | Usage                                               |
-| -------------------- | ----------- | --------------- | --------------------------------------------------- |
-| Page title           | `text-lg`   | `font-semibold` | Page headings ("Dashboard", "Positions")             |
-| Section heading      | `text-base` | `font-semibold` | Card titles, panel headers                           |
-| Body                 | `text-sm`   | `font-normal`   | Default body text, descriptions                      |
-| Table header         | `text-xs`   | `font-medium`   | Column headers + `tracking-wide uppercase`           |
-| Table cell           | `text-sm`   | `font-normal`   | Data cells                                           |
-| Table cell (numeric) | `text-sm`   | `font-medium`   | USD amounts, APY, z-scores — use `font-mono`         |
-| Label                | `text-xs`   | `font-medium`   | Form labels, metadata, badge text                    |
-| Caption              | `text-xs`   | `font-normal`   | Help text, timestamps, wallet addresses              |
+| Token                | Size        | Weight          | Usage                                        |
+| -------------------- | ----------- | --------------- | -------------------------------------------- |
+| Page title           | `text-lg`   | `font-semibold` | Page headings ("Dashboard", "Positions")     |
+| Section heading      | `text-base` | `font-semibold` | Card titles, panel headers                   |
+| Body                 | `text-sm`   | `font-normal`   | Default body text, descriptions              |
+| Table header         | `text-xs`   | `font-medium`   | Column headers + `tracking-wide uppercase`   |
+| Table cell           | `text-sm`   | `font-normal`   | Data cells                                   |
+| Table cell (numeric) | `text-sm`   | `font-medium`   | USD amounts, APY, z-scores — use `font-mono` |
+| Label                | `text-xs`   | `font-medium`   | Form labels, metadata, badge text            |
+| Caption              | `text-xs`   | `font-normal`   | Help text, timestamps, wallet addresses      |
 
 ### Rules
 
@@ -220,22 +220,22 @@ Empty state:   Lucide Inbox icon + "No active positions" centered
 
 ### 5.3 Status Indicators
 
-| Status       | Style                                          |
-| ------------ | ---------------------------------------------- |
-| Bot running  | Green dot (`bg-profit`) + "Running" text       |
-| Bot stopped  | Gray dot (`bg-muted-foreground`) + "Stopped"   |
-| Lending      | `bg-chart-1/10 text-chart-1` badge             |
-| Spread trade | `bg-chart-4/10 text-chart-4` badge             |
-| Basis trade  | `bg-chart-6/10 text-chart-6` badge             |
+| Status       | Style                                        |
+| ------------ | -------------------------------------------- |
+| Bot running  | Green dot (`bg-profit`) + "Running" text     |
+| Bot stopped  | Gray dot (`bg-muted-foreground`) + "Stopped" |
+| Lending      | `bg-chart-1/10 text-chart-1` badge           |
+| Spread trade | `bg-chart-4/10 text-chart-4` badge           |
+| Basis trade  | `bg-chart-6/10 text-chart-6` badge           |
 
 ### 5.4 Buttons
 
-| Variant     | Classes                                                                                    |
-| ----------- | ------------------------------------------------------------------------------------------ |
-| Primary     | `bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3 text-sm font-medium`     |
-| Secondary   | `bg-secondary text-secondary-foreground hover:bg-secondary/80 h-8 px-3 text-sm`           |
-| Ghost       | `hover:bg-accent hover:text-accent-foreground h-8 px-2 text-sm`                           |
-| Destructive | `bg-destructive text-white hover:bg-destructive/90 h-8 px-3 text-sm font-medium`          |
+| Variant     | Classes                                                                               |
+| ----------- | ------------------------------------------------------------------------------------- |
+| Primary     | `bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3 text-sm font-medium` |
+| Secondary   | `bg-secondary text-secondary-foreground hover:bg-secondary/80 h-8 px-3 text-sm`       |
+| Ghost       | `hover:bg-accent hover:text-accent-foreground h-8 px-2 text-sm`                       |
+| Destructive | `bg-destructive text-white hover:bg-destructive/90 h-8 px-3 text-sm font-medium`      |
 
 ---
 
@@ -243,12 +243,12 @@ Empty state:   Lucide Inbox icon + "No active positions" centered
 
 ### Chart Type Mapping
 
-| Chart Type  | Use Case                                                           |
-| ----------- | ------------------------------------------------------------------ |
-| Area        | Vault TVL over time, cumulative PnL                                |
-| Line        | APY trends, z-score evolution, funding rate history                 |
-| Bar         | Allocation breakdown (stacked), daily PnL                          |
-| Pie / Donut | Current allocation split (lending / spread / basis / idle)         |
+| Chart Type  | Use Case                                                   |
+| ----------- | ---------------------------------------------------------- |
+| Area        | Vault TVL over time, cumulative PnL                        |
+| Line        | APY trends, z-score evolution, funding rate history        |
+| Bar         | Allocation breakdown (stacked), daily PnL                  |
+| Pie / Donut | Current allocation split (lending / spread / basis / idle) |
 
 ### Axis Formatting
 
@@ -302,36 +302,36 @@ Always `<ResponsiveContainer width="100%" height={300}>`. KPI-embedded mini char
 
 **Library**: Lucide React
 
-| Concept          | Icon              |
-| ---------------- | ----------------- |
-| Dashboard        | `LayoutDashboard` |
-| Positions        | `ArrowLeftRight`  |
-| Performance      | `TrendingUp`      |
-| Signals          | `Activity`        |
-| Bot status       | `Bot`             |
-| Lending layer    | `Landmark`        |
-| Spread trade     | `GitCompare`      |
-| Basis trade      | `Layers`          |
-| Profit / Up      | `TrendingUp`      |
-| Loss / Down      | `TrendingDown`    |
-| Warning          | `AlertTriangle`   |
-| Settings         | `Settings`        |
-| Copy address     | `Copy`            |
-| External link    | `ExternalLink`    |
-| Theme toggle     | `Sun` / `Moon`    |
+| Concept       | Icon              |
+| ------------- | ----------------- |
+| Dashboard     | `LayoutDashboard` |
+| Positions     | `ArrowLeftRight`  |
+| Performance   | `TrendingUp`      |
+| Signals       | `Activity`        |
+| Bot status    | `Bot`             |
+| Lending layer | `Landmark`        |
+| Spread trade  | `GitCompare`      |
+| Basis trade   | `Layers`          |
+| Profit / Up   | `TrendingUp`      |
+| Loss / Down   | `TrendingDown`    |
+| Warning       | `AlertTriangle`   |
+| Settings      | `Settings`        |
+| Copy address  | `Copy`            |
+| External link | `ExternalLink`    |
+| Theme toggle  | `Sun` / `Moon`    |
 
 ---
 
 ## 9. Anti-Patterns
 
-| Anti-Pattern                         | Why                                    | Correct Approach                              |
-| ------------------------------------ | -------------------------------------- | --------------------------------------------- |
-| Emojis as UI elements                | Inconsistent, unprofessional           | Lucide icons                                  |
-| Light mode default                   | Trading terminals are dark             | Dark mode default                             |
-| `rounded-full` on cards              | Too casual for finance                 | `rounded-md` or `rounded-lg`                  |
-| Gradient backgrounds                 | Startup aesthetic                      | Solid dark backgrounds                        |
-| Box shadows for depth                | Flat is professional                   | Borders for separation                        |
-| Color-only status indication         | Fails accessibility                    | Pair with text label or icon                  |
-| Red/green for non-PnL data           | Reserves trading semantics             | Use chart palette                             |
-| `text-primary` for financial numbers | Cyan is for actions/links              | Use `text-foreground`, `text-profit`, `text-loss` |
-| Truncating USD values                | Financial data must be fully visible   | Size columns to fit                           |
+| Anti-Pattern                         | Why                                  | Correct Approach                                  |
+| ------------------------------------ | ------------------------------------ | ------------------------------------------------- |
+| Emojis as UI elements                | Inconsistent, unprofessional         | Lucide icons                                      |
+| Light mode default                   | Trading terminals are dark           | Dark mode default                                 |
+| `rounded-full` on cards              | Too casual for finance               | `rounded-md` or `rounded-lg`                      |
+| Gradient backgrounds                 | Startup aesthetic                    | Solid dark backgrounds                            |
+| Box shadows for depth                | Flat is professional                 | Borders for separation                            |
+| Color-only status indication         | Fails accessibility                  | Pair with text label or icon                      |
+| Red/green for non-PnL data           | Reserves trading semantics           | Use chart palette                                 |
+| `text-primary` for financial numbers | Cyan is for actions/links            | Use `text-foreground`, `text-profit`, `text-loss` |
+| Truncating USD values                | Financial data must be fully visible | Size columns to fit                               |

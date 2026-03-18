@@ -56,10 +56,7 @@ const getHttpCodeName = (code: number): string => {
     }
 };
 
-export const convertToAppError = (
-    error: unknown,
-    scope: ErrorScope = ErrorScope.HTTP,
-) => {
+export const convertToAppError = (error: unknown, scope: ErrorScope = ErrorScope.HTTP) => {
     if (error instanceof AppError) {
         return error;
     }

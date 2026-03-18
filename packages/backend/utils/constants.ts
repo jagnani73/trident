@@ -20,9 +20,7 @@ export const CORS_CONFIG = (): CorsOptions => {
             "X-Requested-With",
             "Accept",
             "Origin",
-            ...(process.env.NODE_ENV !== "production"
-                ? ["ngrok-skip-browser-warning"]
-                : []),
+            ...(process.env.NODE_ENV !== "production" ? ["ngrok-skip-browser-warning"] : []),
         ],
         exposedHeaders: ["Content-Length"],
         preflightContinue: false,

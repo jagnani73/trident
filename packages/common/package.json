@@ -1,30 +1,30 @@
 {
-  "name": "@trident/common",
-  "version": "0.1.0",
-  "private": true,
-  "main": "src/index.ts",
-  "types": "src/index.ts",
-  "exports": {
-    ".": "./src/index.ts",
-    "./database": "./database/index.ts",
-    "./errors": "./src/errors/index.ts",
-    "./types": "./src/types/index.ts"
-  },
-  "scripts": {
-    "build": "rimraf dist && pnpm generate && tsc",
-    "generate": "pnpm generate:db-types",
-    "generate:db-types": "ts-node ./scripts/generate-db-types.ts",
-    "script:generate-reset-sql": "ts-node ./scripts/generate-reset-sql.ts",
-    "lint": "tsc --noEmit"
-  },
-  "dependencies": {
-    "drizzle-orm": "^0.45.1",
-    "rimraf": "^6.0.1"
-  },
-  "devDependencies": {
-    "@types/node": "^24.3.0",
-    "drizzle-kit": "^0.31.8",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.2"
-  }
+    "name": "@trident/common",
+    "version": "0.1.0",
+    "private": true,
+    "main": "src/index.ts",
+    "types": "src/index.ts",
+    "exports": {
+        ".": "./src/index.ts",
+        "./database": "./database/index.ts",
+        "./errors": "./src/errors/index.ts",
+        "./types": "./src/types/index.ts"
+    },
+    "scripts": {
+        "build": "rimraf dist && pnpm generate && tsc",
+        "generate": "pnpm generate:db-types",
+        "generate:db-types": "ts-node ./scripts/generate-db-types.ts",
+        "script:generate-reset-sql": "ts-node ./scripts/generate-reset-sql.ts",
+        "lint": "tsc --noEmit && eslint ."
+    },
+    "dependencies": {
+        "drizzle-orm": "^0.45.1",
+        "rimraf": "^6.0.1"
+    },
+    "devDependencies": {
+        "@types/node": "^24.3.0",
+        "drizzle-kit": "^0.31.8",
+        "ts-node": "^10.9.2",
+        "typescript": "^5.9.2"
+    }
 }

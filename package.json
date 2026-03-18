@@ -1,19 +1,36 @@
 {
-  "name": "trident",
-  "version": "0.1.0",
-  "private": true,
-  "description": "Hybrid yield vault for Ranger Build-A-Bear Hackathon",
-  "scripts": {
-    "dev": "pnpm --filter @trident/backend dev",
-    "dev:bot": "pnpm --filter @trident/backend dev:bot",
-    "dev:collector": "pnpm --filter @trident/backend dev:collector",
-    "dev:api": "pnpm --filter @trident/backend dev:api",
-    "dev:frontend": "pnpm --filter @trident/frontend dev",
-    "lint": "pnpm -r lint",
-    "build:common": "pnpm --filter @trident/common build",
-    "db:migrate": "pnpm --filter @trident/backend db:migrate",
-    "db:reset": "pnpm --filter @trident/backend db:reset"
-  },
-  "keywords": ["solana", "defi", "vault", "drift", "ranger"],
-  "packageManager": "pnpm@10.26.2"
+    "name": "trident",
+    "version": "0.1.0",
+    "private": true,
+    "description": "Hybrid yield vault for Ranger Build-A-Bear Hackathon",
+    "scripts": {
+        "dev": "pnpm --filter @trident/backend dev",
+        "dev:bot": "pnpm --filter @trident/backend dev:bot",
+        "dev:collector": "pnpm --filter @trident/backend dev:collector",
+        "dev:api": "pnpm --filter @trident/backend dev:api",
+        "dev:frontend": "pnpm --filter @trident/frontend dev",
+        "lint": "pnpm -r lint",
+        "lint:root": "eslint .",
+        "format": "prettier --write .",
+        "format:check": "prettier --check .",
+        "build:common": "pnpm --filter @trident/common build",
+        "db:migrate": "pnpm --filter @trident/backend db:migrate",
+        "db:reset": "pnpm --filter @trident/backend db:reset"
+    },
+    "keywords": [
+        "solana",
+        "defi",
+        "vault",
+        "drift",
+        "ranger"
+    ],
+    "packageManager": "pnpm@10.26.2",
+    "devDependencies": {
+        "@typescript-eslint/eslint-plugin": "^8.57.1",
+        "@typescript-eslint/parser": "^8.57.1",
+        "eslint": "^9.39.4",
+        "eslint-config-prettier": "^10.1.8",
+        "eslint-plugin-prettier": "^5.5.5",
+        "prettier": "^3.8.1"
+    }
 }
