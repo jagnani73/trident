@@ -23,7 +23,7 @@ Single backend process + a frontend dashboard:
 - **backend** (`pnpm dev`) — Express API on port 8000 + `JobsService` tick loops. Initializes DB → starts HTTP server → connects to Drift → runs warmup → starts jobs. If Drift fails, API still serves DB-only responses.
 - **frontend** (`pnpm dev:frontend`) — Next.js 16 dashboard on port 3000. Polls API every 10-15s.
 
-`JobsService` runs a 30s tick loop: collector tick (funding rates + spread prices → DB) then bot tick (signals → risk → allocate → execute). Tick overlap is guarded — if a tick takes >30s, the next one is skipped.
+`JobsService` runs a 30s tick loop: collector tick (funding rates + spread prices → DB) then bot tick (signals → risk → allocate → execute → lending rebalance). Tick overlap is guarded — if a tick takes >30s, the next one is skipped. A `DRY_RUN` flag in `BOT_CONFIG` blocks all on-chain transactions — proposals are logged but not executed.
 
 ## Monorepo Structure
 
@@ -50,13 +50,13 @@ packages/
 │   │   ├── spread-detector.service.ts # Z-score computation, entry/exit signals
 │   │   ├── funding-monitor.service.ts # Funding APR tracking, flip detection
 │   │   ├── risk-manager.service.ts    # Drawdown, health rate, stop-loss, veto power
-│   │   ├── capital-allocator.service.ts # Signal → proposal conversion
+│   │   ├── capital-allocator.service.ts # Signal → proposal conversion + lending rebalance
 │   │   ├── ranger-vault.service.ts    # Voltr vault SDK wrapper (deposit/withdraw/query strategies)
 │   │   ├── database.service.ts        # Drizzle DB connection
 │   │   └── logger.service.ts          # Scoped structured logging
 │   ├── utils/
-│   │   └── constants.ts    # BOT_CONFIG (all thresholds), market indexes, spread pairs, VAULT_CONFIG
-│   ├── scripts/scripts/    # One-time setup scripts
+│   │   └── constants.ts    # BOT_CONFIG (all thresholds + DRY_RUN), market indexes, spread pairs, VAULT_CONFIG
+│   ├── scripts/            # One-time setup scripts
 │   │   ├── setup-vault.ts           # Create vault + add adaptors on-chain
 │   │   └── add-strategies.ts        # Initialize Drift + Lending strategy slots
 │   └── db-migrations/      # Raw SQL migrations
@@ -116,8 +116,8 @@ pnpm db:migrate             # Apply pending migrations
 pnpm db:reset               # Reset DB + re-apply all migrations
 
 # Vault setup (one-time, requires funded wallet)
-npx tsx packages/backend/scripts/scripts/setup-vault.ts       # Create vault + add adaptors
-npx tsx packages/backend/scripts/scripts/add-strategies.ts     # Init Drift + Lending strategies
+npx tsx packages/backend/scripts/setup-vault.ts       # Create vault + add adaptors
+npx tsx packages/backend/scripts/add-strategies.ts    # Init Drift + Lending strategies
 ```
 
 ## Environment Variables
@@ -153,18 +153,20 @@ All under `/api/v1/`, response format: `{ success: boolean, data: T }`.
 ## Conventions
 
 - All thresholds and magic numbers live in `BOT_CONFIG` (`packages/backend/utils/constants.ts`) — never inline
+- `DRY_RUN: true` in BOT_CONFIG blocks all on-chain execution — flip to `false` to go live
 - Market-level constants (adaptor IDs, risk params) live in `packages/common/constants/`
 - Services are static classes — single process owns the lifecycle
 - Logging: `LoggerService.scoped("service-name")` for structured, scoped output
 - Drift SDK connection initialized once, shared across all services
 - All on-chain transactions log to `bot_events` before and after execution
 - Risk manager has veto power over all position changes
+- Lending rebalance is threshold-based (>5% drift) to minimize tx fees
 
 ## Current State (as of 2026-03-19)
 
-- **Working:** API server (all 7 endpoints), live Drift market data (funding + spreads), DB with historical data, frontend dashboard (4 pages), RangerVaultService (deposit/withdraw/query via Voltr SDK), setup scripts (setup-vault.ts, add-strategies.ts)
-- **Not yet integrated:** RangerVaultService into JobsService tick loop (separate step after vault deployment)
-- **Blocker:** Wallet needs ~0.02 SOL to create Drift subaccount and deploy vault
+- **Working:** API server (all 7 endpoints), live Drift market data (funding + spreads), DB with seed + live data, frontend dashboard (4 pages), RangerVaultService (deposit/withdraw/query via Voltr SDK), setup scripts, vault deployed on-chain, lending strategy initialized, full bot pipeline running in DRY_RUN mode (signals → risk → proposals → logged, no execution)
+- **Deployed on-chain:** Vault `6w7SPiB9agGh5ctB1LWMAR9ZpnguDxYm5zGgQS71B7sw`, Lending strategy `GGf8eUHvTX3CLC3HubPpMxm8iqHKheR6ZEK1QAyozv5j`
+- **To go live:** Set `DRY_RUN: false` in BOT_CONFIG + deposit USDC into Drift subaccount
 
 ## Documentation
 

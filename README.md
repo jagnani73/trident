@@ -281,14 +281,18 @@ Every 30 seconds, the bot-engine runs this pipeline:
        ├── Risk-mandated closures? → close those positions
        ├── Spread signal + confidence ≥ 50% + within limits? → propose open
        ├── Funding signal + within limits? → propose open
+       ├── Idle > 5%? → propose deposit_lending (sweep to lending)
+       ├── Trades need capital? → propose withdraw_lending (pull from lending)
        └── Nothing? → noop
 
-4. EXECUTE
+4. EXECUTE (blocked when DRY_RUN = true)
    └── For each proposal:
        └── open_spread → DriftService.placePerpMarketOrder() × 2 legs
        └── close_spread → DriftService.closePosition() × 2 legs
        └── open_basis → deposit spot + short perp
        └── close_basis → close perp + withdraw spot
+       └── deposit_lending → RangerVaultService.depositToStrategy()
+       └── withdraw_lending → RangerVaultService.withdrawFromStrategy()
        └── Log to bot_events table
 ```
 
@@ -305,8 +309,8 @@ All services are **static classes** with no instance state. They expose static m
 | `SpreadDetectorService` | `services/spread-detector.service.ts` | Computes z-scores from historical spread ratios. Emits entry/exit signals when z-score crosses thresholds. |
 | `FundingMonitorService` | `services/funding-monitor.service.ts` | Converts raw funding rates to annualized APR. Detects elevated funding and rate flips. |
 | `RiskManagerService` | `services/risk-manager.service.ts` | Enforces drawdown limits, health rate floor, position stop-losses, concentration limits. Has veto power over all trades. |
-| `CapitalAllocatorService` | `services/capital-allocator.service.ts` | Converts signals + risk assessment into concrete proposals (open/close/noop). |
-| `RangerVaultService` | `services/ranger-vault.service.ts` | Wraps `@voltr/vault-sdk` for on-chain vault operations. **Not yet implemented** — currently a stub. |
+| `CapitalAllocatorService` | `services/capital-allocator.service.ts` | Converts signals + risk assessment into proposals (open/close/deposit_lending/withdraw_lending/noop). |
+| `RangerVaultService` | `services/ranger-vault.service.ts` | Wraps `@voltr/vault-sdk` for on-chain vault operations — deposit/withdraw to strategies, vault state queries. |
 | `LoggerService` | `services/logger.service.ts` | Scoped structured logging. `LoggerService.scoped("drift::init")` → `INFO [...] (drift::init) -> connected`. |
 
 ---
@@ -332,6 +336,8 @@ All thresholds live in `BOT_CONFIG` (`packages/backend/utils/constants.ts`). Not
 | `EMERGENCY_COOLDOWN_MS` | 900,000 | Wait 15 minutes after emergency before re-entering |
 | `MIN_POSITION_SIZE_USDC` | 10 | Don't open positions smaller than $10 |
 | `CONFIDENCE_THRESHOLD` | 0.5 | Spread signal needs ≥ 50% confidence to act |
+| `REBALANCE_DRIFT_PCT` | 0.05 | Rebalance idle↔lending when allocation drifts >5% |
+| `DRY_RUN` | true | Blocks all on-chain transactions — proposals logged only |
 
 ### Market Mappings
 
@@ -355,7 +361,7 @@ These scripts run once to configure on-chain state. They are **not** part of the
 
 **Why do these exist?** On-chain programs on Solana require explicit account initialization. You can't just "start using" a vault — you must first create it (allocates on-chain storage, costs rent in SOL), then tell it which adaptors it's allowed to use. This is similar to deploying a smart contract on Ethereum, except Solana separates the program (deployed once) from accounts (created per user/vault).
 
-> **Status:** These scripts are placeholders — not yet implemented. The vault needs a funded wallet (~0.02 SOL for rent) before they can run.
+> **Status:** Completed. Vault deployed at `6w7SPiB9agGh5ctB1LWMAR9ZpnguDxYm5zGgQS71B7sw`, lending strategy at `GGf8eUHvTX3CLC3HubPpMxm8iqHKheR6ZEK1QAyozv5j`.
 
 ---
 
@@ -422,6 +428,9 @@ cp packages/frontend/.env.example packages/frontend/.env.local
 | `SOLANA_NETWORK` | Yes | `devnet` or `mainnet-beta` |
 | `DRIFT_ENV` | Yes | `devnet` or `mainnet-beta` |
 | `DRIFT_SUBACCOUNT` | No | Drift subaccount ID (default: `0`) |
+| `RANGER_VAULT_ADDRESS` | No | Vault pubkey (set after running setup-vault.ts) |
+| `DRIFT_STRATEGY_ADDRESS` | No | Drift strategy pubkey (set after add-strategies.ts) |
+| `LENDING_STRATEGY_ADDRESS` | No | Lending strategy pubkey (set after add-strategies.ts) |
 | `PORT` | No | API server port (default: `8000`) |
 | `LOG_LEVEL` | No | Comma-separated: `debug,info,warn,error` |
 
@@ -463,4 +472,5 @@ pnpm build:common      # Regenerate TypeScript types from DB schema
 1. **Database** — ensure `DATABASE_URL` points to a PostgreSQL instance with migrations applied
 2. **Start backend** — `pnpm dev` → hit `http://localhost:8000/healthcheck` (API starts immediately, then Drift connects + jobs begin)
 3. **Start frontend** — `pnpm dev:frontend` → open `http://localhost:3000`
-4. **Fund wallet** — send ~0.02 SOL to the wallet address for Drift account creation (needed for bot tick to execute trades)
+4. **Observe** — bot runs in `DRY_RUN` mode by default, proposals are logged but no on-chain transactions are sent
+5. **Go live** — set `DRY_RUN: false` in `BOT_CONFIG` + deposit USDC into Drift subaccount

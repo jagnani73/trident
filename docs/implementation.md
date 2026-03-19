@@ -45,14 +45,16 @@ ranger/
 │   │   │   ├── spread-detector.service.ts   # Z-score computation from spread_snapshots
 │   │   │   ├── funding-monitor.service.ts   # APR tracking from funding_rate_snapshots
 │   │   │   ├── risk-manager.service.ts      # Drawdown, health, stop-loss, veto
-│   │   │   ├── capital-allocator.service.ts # Signal → proposal conversion
-│   │   │   └── ranger-vault.service.ts      # Ranger vault SDK wrapper (STUB)
+│   │   │   ├── capital-allocator.service.ts # Signal → proposal conversion + lending rebalance
+│   │   │   └── ranger-vault.service.ts      # Voltr vault SDK wrapper (deposit/withdraw/query)
 │   │   │
 │   │   ├── scripts/
-│   │   │   └── generate-reset-sql.ts  # Generates cumulative DB reset SQL
+│   │   │   ├── setup-vault.ts        # One-time vault creation + adaptor registration
+│   │   │   ├── add-strategies.ts     # Initialize Drift + Lending strategy slots
+│   │   │   └── generate-reset-sql.ts # Generates cumulative DB reset SQL
 │   │   │
 │   │   ├── utils/
-│   │   │   ├── constants.ts        # BOT_CONFIG, PERP_MARKETS, SPOT_MARKETS, SPREAD_PAIRS, CORS
+│   │   │   ├── constants.ts        # BOT_CONFIG (+ DRY_RUN, REBALANCE_DRIFT_PCT), PERP_MARKETS, SPOT_MARKETS, SPREAD_PAIRS, VAULT_CONFIG, CORS
 │   │   │   └── patch-native-bindings.cjs  # Patches native bindings for Windows
 │   │   │
 │   │   └── db-migrations/
@@ -145,25 +147,27 @@ ranger/
 - Polling hooks with configurable intervals (10-30s)
 - Postman collection with 15 requests
 
+### Phase 7: Ranger Vault Integration
+- `RangerVaultService` — full Voltr SDK wrapper (VoltrClient init, vault state queries, strategy deposit/withdraw)
+- `setup-vault.ts` — one-time vault creation + adaptor registration (both Drift + Lending adaptors)
+- `add-strategies.ts` — strategy PDA derivation + initialization via Lending adaptor
+- Vault deployed on-chain: `6w7SPiB9agGh5ctB1LWMAR9ZpnguDxYm5zGgQS71B7sw`
+- Lending strategy initialized: `GGf8eUHvTX3CLC3HubPpMxm8iqHKheR6ZEK1QAyozv5j`
+- RangerVaultService integrated into API init/shutdown lifecycle
+- Vault state API uses DB as baseline, overlays live on-chain data when funded
+
+### Phase 8: Lending Rebalance + DRY_RUN
+- `deposit_lending` / `withdraw_lending` proposal types added to CapitalAllocatorService
+- Threshold-based rebalancing: only rebalance idle↔lending when allocation drifts >5% from target
+- Idle capital swept to lending; lending withdrawn when trades need capital (capped at MIN_LENDING_ALLOCATION)
+- Execution cases added to JobsService with vault availability guard
+- `DRY_RUN: true` flag in BOT_CONFIG blocks all on-chain transactions — proposals logged but not sent
+- Execution guard split: Drift ops gated by `canExecuteDrift`, vault ops gated by `canExecuteVault`
+- SOL-burning prevention: unfunded Drift account skips all trade execution
+
 ---
 
 ## What's Not Built Yet
-
-### RangerVaultService (Critical)
-- `ranger-vault.service.ts` is a stub
-- Needs to wrap `@voltr/vault-sdk` for:
-  - `initializeVault(config)` — one-time vault creation
-  - `addAdaptor(adaptorId)` — register Drift/Lending adaptors
-  - `initializeStrategy(adaptor, market)` — activate strategy slots
-  - `depositToStrategy(strategy, amount)` — move vault USDC into a strategy
-  - `withdrawFromStrategy(strategy, amount)` — pull USDC back
-  - `getVaultState()` — TVL, LP price, allocations
-- **Blocked on:** funded wallet (~0.02 SOL) + vault deployment
-
-### Setup Scripts (Critical)
-- `setup-vault.ts` — creates Ranger vault on-chain (placeholder)
-- `add-strategies.ts` — registers adaptors with vault (placeholder)
-- `100_dummy-data.up.sql` — SQL migration that seeds 48h of realistic dashboard data
 
 ### Backtester (Nice-to-have)
 - Python backtesting module not started
@@ -178,41 +182,37 @@ ranger/
 ## Current State (2026-03-19)
 
 ### Working
-- API server — all 7 endpoints return data
+- Full bot pipeline running in DRY_RUN mode (signals → risk → proposals → logged, no execution)
+- API server — all 7 endpoints return data (DB baseline + live Drift overlay)
 - Live Drift connection — funding rates, oracle prices, spread ratios flowing from mainnet
-- DB — historical funding and spread data accumulating
-- Frontend — 4 pages render with loading/empty states
-- Bot engine — tick loop runs but errors on position-level operations (no Drift user account)
+- DB — seed data (48h) + live data accumulating side by side
+- Frontend — 4 pages render with seed + live data
+- Vault deployed on-chain: `6w7SPiB9agGh5ctB1LWMAR9ZpnguDxYm5zGgQS71B7sw`
+- Lending strategy: `GGf8eUHvTX3CLC3HubPpMxm8iqHKheR6ZEK1QAyozv5j`
+- Lending rebalance proposals generated (deposit_lending/withdraw_lending) but blocked by DRY_RUN
+- Spread detector producing z-scores from 870+ data points
+- Funding monitor detecting ETH basis opportunity (~25% APR)
 
 ### Verified Endpoints
 | Endpoint | Status | Notes |
 |---|---|---|
 | `GET /healthcheck` | OK | Returns uptime |
-| `GET /vault/state` | OK (live: true) | Returns zeros — no Drift user account |
-| `GET /vault/positions` | OK | Empty — no positions yet |
-| `GET /vault/history` | OK | Empty — no snapshots yet |
+| `GET /vault/state` | OK | DB baseline + live overlay when funded |
+| `GET /vault/positions` | OK | 9 positions from seed data |
+| `GET /vault/history` | OK | 577 snapshots from seed data |
 | `GET /metrics/funding` | OK | Live SOL/BTC/ETH rates + DB history |
 | `GET /metrics/spreads` | OK | Live SOL/ETH, BTC/ETH ratios + DB history |
-| `GET /bot/status` | OK | running: false, last error: "no user" |
-| `GET /bot/events` | OK | 33 events from previous runs |
-
-### Known Issues
-- Bot-engine errors: `DriftClient has no user for user id 0_<wallet>` — wallet needs ~0.02 SOL
-- Z-scores all return 0 — spread detector needs MIN_ZSCORE_DATA_POINTS (30) with sufficient time span
-- Public Solana RPC (`api.mainnet-beta.solana.com`) works but is rate-limited — should switch to Helius
+| `GET /bot/status` | OK | running: true |
+| `GET /bot/events` | OK | Tick events + dry-run proposals |
 
 ---
 
 ## Remaining Work (Priority Order)
 
-1. **Fund wallet** — send ~0.02 SOL to `3a3UWFaUDJuehbEdvkmzNUXZehCmhMWuPrK1YzAdgAyC`
-2. **RangerVaultService** — implement `@voltr/vault-sdk` wrapper
-3. **Setup scripts** — vault creation + adaptor registration
-4. **End-to-end test** — run backend + frontend together
-5. **Z-score computation** — verify spread detector works with accumulated data
-6. **Submission docs** — `strategy.md` + `risk-management.md`
-7. **Demo video** — 3-minute pitch/demo for hackathon submission
-8. **Backtester** — if time permits
+1. **Submission docs** — `strategy.md` + `risk-management.md`
+2. **Demo video** — 3-minute pitch/demo for hackathon submission
+3. **Go live** — set `DRY_RUN: false` + deposit USDC into Drift (requires user confirmation)
+4. **Backtester** — if time permits
 
 ---
 
