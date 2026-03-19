@@ -34,7 +34,6 @@ export default [
             ],
             "@typescript-eslint/no-explicit-any": "warn",
             "@typescript-eslint/consistent-type-imports": "error",
-            "no-console": ["warn", { allow: ["warn", "error"] }],
         },
     },
     prettier,

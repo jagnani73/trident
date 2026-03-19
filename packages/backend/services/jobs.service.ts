@@ -145,24 +145,35 @@ export class JobsService {
                 riskAssessment,
             );
 
-            // 4. Execute proposals
+            // 4. Execute proposals (only if Drift user is funded — otherwise we'd burn SOL on failed txs)
             let executed = 0;
-            for (const proposal of proposals) {
-                if (proposal.action === "noop") continue;
-                try {
-                    await this.executeProposal(proposal, db);
-                    executed++;
-                } catch (err) {
-                    log.error("proposal-execution-failed", {
-                        action: proposal.action,
-                        reason: proposal.reason,
-                        err,
+            const canExecute = DriftService.hasUser() && DriftService.getTotalCollateral() > 0;
+            if (!canExecute) {
+                const actionable = proposals.filter((p) => p.action !== "noop");
+                if (actionable.length > 0) {
+                    log.info("skipping-execution", {
+                        reason: "Drift user not funded — observation mode only",
+                        skippedActions: actionable.map((p) => p.action),
                     });
-                    await this.logBotEvent(db, "error", {
-                        source: "bot-engine",
-                        action: proposal.action,
-                        error: err instanceof Error ? err.message : String(err),
-                    });
+                }
+            } else {
+                for (const proposal of proposals) {
+                    if (proposal.action === "noop") continue;
+                    try {
+                        await this.executeProposal(proposal, db);
+                        executed++;
+                    } catch (err) {
+                        log.error("proposal-execution-failed", {
+                            action: proposal.action,
+                            reason: proposal.reason,
+                            err,
+                        });
+                        await this.logBotEvent(db, "error", {
+                            source: "bot-engine",
+                            action: proposal.action,
+                            error: err instanceof Error ? err.message : String(err),
+                        });
+                    }
                 }
             }
 

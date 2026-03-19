@@ -44,6 +44,22 @@ export const SPREAD_PAIRS: Array<{ symbolA: PerpMarketKey; symbolB: PerpMarketKe
     { symbolA: "BTC", symbolB: "ETH" },
 ];
 
+/** Ranger vault (Voltr) program IDs and addresses */
+export const VAULT_CONFIG = {
+    PROGRAM_ID: "vVoLTRjQmtFpiYoegx285Ze4gsLJ8ZxgFKVcuvmG1a8",
+    DRIFT_ADAPTOR_PROGRAM_ID: "EBN93eXs5fHGBABuajQqdsKRkCgaqtJa8vEFD6vKXiP",
+    LENDING_ADAPTOR_PROGRAM_ID: "aVoLTRCRt3NnnchvLYH6rMYehJHwM5m45RmLBZq7PGz",
+    USDC_MINT: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    /** Drift state account on mainnet */
+    DRIFT_STATE: "5zpq7DvB6UdFFvpmBPspGPNfUGoBRRCE2HHg5u3gxcsN",
+    /** Drift program ID */
+    DRIFT_PROGRAM_ID: "dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH",
+    /** USDC oracle on Drift */
+    USDC_ORACLE: "9VCioxmni2gDLv11qufWzT3RDERhQE4iY5Gf7NTfYyAV",
+    /** USDC spot market index on Drift */
+    USDC_SPOT_MARKET_INDEX: 0,
+} as const;
+
 export const CORS_CONFIG = (): CorsOptions => {
     const origins: (string | RegExp)[] = [];
 

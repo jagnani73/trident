@@ -5,6 +5,7 @@ import { DatabaseService } from "../../services/database.service";
 import { DriftService } from "../../services/drift.service";
 import { JobsService } from "../../services/jobs.service";
 import { LoggerService } from "../../services/logger.service";
+import { RangerVaultService } from "../../services/ranger-vault.service";
 import { CORS_CONFIG } from "../../utils/constants";
 import { type AppError, convertToAppError, ErrorScope } from "@trident/common/errors";
 import cors from "cors";
@@ -67,6 +68,16 @@ app.use((error: Error | unknown, _req: Request, res: Response, _next: NextFuncti
     try {
         await DatabaseService.init();
 
+        // Vault SDK init (non-fatal — runs without vault address configured)
+        try {
+            await RangerVaultService.init();
+        } catch (err) {
+            log.warn("vault-init-failed", {
+                message: "RangerVaultService init failed — continuing without vault",
+                error: err instanceof Error ? err.message : String(err),
+            });
+        }
+
         const env: string = process.env.NODE_ENV || "development";
         const port: number = +(process.env.PORT || 8000);
         server.listen(port, () => {
@@ -85,6 +96,7 @@ async function shutdown() {
     const log = logger.scoped("shutdown");
     log.info("shutting-down");
     JobsService.stop();
+    RangerVaultService.shutdown();
     await DriftService.shutdown();
     process.exit(0);
 }

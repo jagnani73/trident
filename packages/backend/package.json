@@ -8,14 +8,15 @@
         "start": "node ./dist/microservices/api/index.js",
         "script:generate-reset-sql": "ts-node ./scripts/generate-reset-sql.ts",
         "script:add-strategies": "ts-node ./scripts/add-strategies.ts",
-
         "script:setup-vault": "ts-node ./scripts/setup-vault.ts",
         "lint": "tsc --noEmit && eslint ."
     },
     "dependencies": {
         "@drift-labs/sdk": "2.160.0-beta.1",
+        "@solana/spl-token": "^0.4.14",
         "@solana/web3.js": "1.98.0",
         "@trident/common": "workspace:*",
+        "@voltr/vault-sdk": "^1.0.20",
         "bn.js": "^5.2.3",
         "cors": "^2.8.5",
         "dotenv": "^17.2.1",
@@ -30,6 +31,7 @@
         "@types/express": "^5.0.3",
         "@types/node": "^24.3.0",
         "rimraf": "^6.0.1",
+        "ts-node": "^10.9.2",
         "tsc-watch": "^7.1.1",
         "tsx": "^4.19.0",
         "typescript": "^5.9.2"

@@ -39,7 +39,7 @@ packages/
 ├── backend/
 │   ├── microservices/
 │   │   └── api/            # Unified entry point: Express API + JobsService
-│   │       ├── index.ts    # DB init → server.listen → Drift init → warmup → jobs
+│   │       ├── index.ts    # DB init → vault init → server.listen → Drift init → warmup → jobs
 │   │       ├── utils.ts    # apiHandler, parsePagination, parseTimeRange, isDriftAvailable
 │   │       ├── vault/      # /api/v1/vault — state, positions, history
 │   │       ├── metrics/    # /api/v1/metrics — funding rates, spread z-scores
@@ -51,11 +51,14 @@ packages/
 │   │   ├── funding-monitor.service.ts # Funding APR tracking, flip detection
 │   │   ├── risk-manager.service.ts    # Drawdown, health rate, stop-loss, veto power
 │   │   ├── capital-allocator.service.ts # Signal → proposal conversion
-│   │   ├── ranger-vault.service.ts    # Ranger vault SDK wrapper (STUB — not yet implemented)
+│   │   ├── ranger-vault.service.ts    # Voltr vault SDK wrapper (deposit/withdraw/query strategies)
 │   │   ├── database.service.ts        # Drizzle DB connection
 │   │   └── logger.service.ts          # Scoped structured logging
 │   ├── utils/
-│   │   └── constants.ts    # BOT_CONFIG (all thresholds), market indexes, spread pairs
+│   │   └── constants.ts    # BOT_CONFIG (all thresholds), market indexes, spread pairs, VAULT_CONFIG
+│   ├── scripts/scripts/    # One-time setup scripts
+│   │   ├── setup-vault.ts           # Create vault + add adaptors on-chain
+│   │   └── add-strategies.ts        # Initialize Drift + Lending strategy slots
 │   └── db-migrations/      # Raw SQL migrations
 ├── frontend/               # Next.js 16 monitoring dashboard
 │   └── src/
@@ -111,7 +114,24 @@ pnpm lint                   # Type-check + lint all packages
 pnpm build:common           # Regenerate DB schema from migrations
 pnpm db:migrate             # Apply pending migrations
 pnpm db:reset               # Reset DB + re-apply all migrations
+
+# Vault setup (one-time, requires funded wallet)
+npx tsx packages/backend/scripts/scripts/setup-vault.ts       # Create vault + add adaptors
+npx tsx packages/backend/scripts/scripts/add-strategies.ts     # Init Drift + Lending strategies
 ```
+
+## Environment Variables
+
+| Variable | Required | Description |
+|---|---|---|
+| `SOLANA_RPC_URL` | Yes | Helius RPC endpoint |
+| `SOLANA_PRIVATE_KEY` | Yes | Wallet private key (bs58 or JSON array) |
+| `DRIFT_ENV` | No | `mainnet-beta` or `devnet` (default: `devnet`) |
+| `DRIFT_SUBACCOUNT` | No | Drift subaccount ID (default: `0`) |
+| `RANGER_VAULT_ADDRESS` | No | Vault pubkey (set after running setup-vault.ts) |
+| `DRIFT_STRATEGY_ADDRESS` | No | Drift strategy pubkey (set after add-strategies.ts) |
+| `LENDING_STRATEGY_ADDRESS` | No | Lending strategy pubkey (set after add-strategies.ts) |
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
 
 ## API Endpoints
 
@@ -120,7 +140,7 @@ All under `/api/v1/`, response format: `{ success: boolean, data: T }`.
 | Endpoint | Data Source | Description |
 |---|---|---|
 | `GET /healthcheck` | Process | Server uptime |
-| `GET /vault/state` | Drift + DB fallback | TVL, allocations, APY, health rate |
+| `GET /vault/state` | Vault → Drift → DB fallback | TVL, allocations, APY, health rate |
 | `GET /vault/positions?status=&type=&limit=&offset=` | DB | Positions with filters |
 | `GET /vault/history?from=&to=&limit=` | DB | Vault snapshots for charts |
 | `GET /metrics/funding?live=&market_index=&from=&to=` | Drift + DB | Funding rates (live + history) |
@@ -142,9 +162,9 @@ All under `/api/v1/`, response format: `{ success: boolean, data: T }`.
 
 ## Current State (as of 2026-03-19)
 
-- **Working:** API server (all 7 endpoints), live Drift market data (funding + spreads), DB with historical data, frontend dashboard (4 pages)
-- **Not yet implemented:** RangerVaultService (stub), setup scripts (setup-vault.ts, add-strategies.ts)
-- **Blocker:** Wallet needs ~0.02 SOL to create Drift subaccount (bot-engine errors with "no user for user id")
+- **Working:** API server (all 7 endpoints), live Drift market data (funding + spreads), DB with historical data, frontend dashboard (4 pages), RangerVaultService (deposit/withdraw/query via Voltr SDK), setup scripts (setup-vault.ts, add-strategies.ts)
+- **Not yet integrated:** RangerVaultService into JobsService tick loop (separate step after vault deployment)
+- **Blocker:** Wallet needs ~0.02 SOL to create Drift subaccount and deploy vault
 
 ## Documentation
 
