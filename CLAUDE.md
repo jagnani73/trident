@@ -22,19 +22,29 @@ An off-chain bot monitors conditions and rebalances capital between layers.
 ```
 packages/
 ├── common/                 # Shared types, constants, pure utils
+│   └── src/
+│       ├── database/       # Auto-generated Drizzle schema (never edit manually)
+│       ├── types/          # Shared types (database, signals, shared)
+│       ├── utils/          # Pure math/formatting/time helpers
+│       ├── constants/      # Drift market IDs, adaptors, risk params
+│       └── errors/         # Error types
 ├── backend/
 │   ├── microservices/
 │   │   ├── bot-engine/     # Core rebalancing bot (the brain)
 │   │   ├── data-collector/ # Drift data ingestion + caching
-│   │   └── api/            # REST API for dashboard
-│   ├── services/
-│   │   ├── drift/              # Drift SDK wrapper
-│   │   ├── ranger-vault/       # Ranger vault SDK wrapper
-│   │   ├── spread-detector/    # Spread opportunity detection (z-score)
-│   │   ├── funding-monitor/    # Funding rate tracking + signals
-│   │   ├── risk-manager/       # Drawdown, position limits, emergency exit
-│   │   └── capital-allocator/  # Layer selection + sizing logic
-│   └── db-migrations/     # PostgreSQL migrations (dev mode)
+│   │   └── api/            # REST API (Express) for dashboard
+│   ├── services/           # Flat *.service.ts files (static classes)
+│   │   ├── drift.service.ts           # Drift SDK wrapper
+│   │   ├── spread-detector.service.ts # Z-score spread signals
+│   │   ├── funding-monitor.service.ts # Funding rate signals
+│   │   ├── risk-manager.service.ts    # Drawdown, limits, emergency exit
+│   │   ├── capital-allocator.service.ts # Layer selection + sizing
+│   │   ├── ranger-vault.service.ts    # Ranger vault SDK wrapper
+│   │   ├── database.service.ts        # Drizzle DB connection
+│   │   └── logger.service.ts          # Pino-based structured logging
+│   ├── utils/
+│   │   └── constants.ts    # BOT_CONFIG, market indexes, spread pairs
+│   └── db-migrations/      # PostgreSQL migrations (dev mode)
 ├── frontend/               # Next.js 15 monitoring dashboard
 └── backtester/             # Python backtesting module
 ```
@@ -47,8 +57,8 @@ packages/
 - `@voltr/vault-sdk` — Ranger vault management
 - `@solana/web3.js` — Solana base
 - `drizzle-orm` + `drizzle-kit` — PostgreSQL ORM
-- `express` or `fastify` — API server
-- `pino` — logging
+- `express` — API server
+- `pino` — structured logging (via `LoggerService`)
 
 ### Frontend (TypeScript)
 
@@ -105,10 +115,11 @@ pnpm db:reset               # Reset DB + re-apply all migrations
 
 ## Conventions
 
-- All thresholds and magic numbers live in `packages/common/constants/` — never inline
-- Bot config comes from env vars, mapped through `config.types.ts`
-- Services are pure modules with no global state — microservices own the lifecycle
-- Drift SDK connection is initialized once per microservice, shared across services via dependency injection
+- All thresholds and magic numbers live in `BOT_CONFIG` (`packages/backend/utils/constants.ts`) — never inline
+- Market-level constants (adaptor IDs, risk params) live in `packages/common/constants/`
+- Services are static classes with no instance state — microservices own the lifecycle
+- Service logging uses `LoggerService.scoped("service-name")` for structured, scoped output
+- Drift SDK connection is initialized once per microservice, shared across services
 - All on-chain transactions log to `bot_events` table before and after execution
 - Risk manager has veto power over all position changes — allocator proposals pass through it
 

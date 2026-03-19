@@ -12,6 +12,9 @@ export const BOT_CONFIG = {
     MAX_SPREAD_ALLOCATION: 0.4,
     MAX_BASIS_ALLOCATION: 0.3,
     MIN_LENDING_ALLOCATION: 0.3,
+    ZSCORE_LOOKBACK_COUNT: 2880,
+    FUNDING_LOOKBACK_COUNT: 2880,
+    MIN_ZSCORE_DATA_POINTS: 30,
 } as const;
 
 /** Perp market indexes on Drift */
