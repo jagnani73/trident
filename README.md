@@ -64,7 +64,7 @@ Drift lending and Drift trading are separate operations. The lending adaptor dep
 | `packages/common` | Shared library. Drizzle DB schema, TypeScript types (`SpreadSignal`, `FundingSignal`, `VaultState`), math utils (z-score, mean, stddev), error types. Sub-path exports: `@trident/common/database`, `/types`, `/constants`, `/errors`, `/utils`. Must be built before backend. |
 | `packages/backend` | Single process: Express API server + JobsService tick loops. Shared service modules (Drift SDK wrapper, spread detector, funding monitor, risk manager, capital allocator). Port 8000. Static singleton services. |
 | `packages/frontend` | Next.js 16 monitoring dashboard. 4 pages (Dashboard, Positions, Performance, Signals). Polls backend API every 10-15 seconds. Dark theme. Not user-facing — this is for vault managers. |
-| `packages/backtester` | Python backtesting module (planned). Historical strategy validation using Drift S3 data. |
+| `packages/backtester` | Python backtesting module. Generates synthetic 90-day market data, runs the full strategy pipeline (same thresholds as live bot), outputs performance metrics and charts. See [`packages/backtester/README.md`](packages/backtester/README.md). |
 
 ### Databases
 
@@ -399,6 +399,56 @@ All under `/api/v1/`. Every response follows: `{ success: boolean, data: T }`.
 
 ---
 
+## Backtest Results
+
+90-day simulation on synthetic correlated price data with regime-switching funding rates. Uses the exact same BOT_CONFIG thresholds as the live bot.
+
+```
+  Initial:     $10,000.00
+  Final:       $10,487.05
+  APY:         21.27%
+  Max DD:      2.59%
+  Sharpe:      3.03
+
+  Trades:      105 (53.3% win rate, 1.46 profit factor)
+  Spread PnL:  +$423.56 (66 trades — main alpha source)
+  Basis PnL:   -$3.08 (39 trades — near break-even after costs)
+  Lending:     +$148.17 (guaranteed yield floor)
+  Slippage:    -$164.35 (simulated 5 bps per leg)
+  Emergencies: 0 (5% drawdown cap never breached)
+```
+
+Run it yourself: `py packages/backtester/run.py` (Python 3.11+, see [`packages/backtester/README.md`](packages/backtester/README.md))
+
+---
+
+## On-Chain Addresses
+
+All deployed on Solana mainnet-beta.
+
+| Component | Address |
+|---|---|
+| **Ranger Vault** | [`6w7SPiB9agGh5ctB1LWMAR9ZpnguDxYm5zGgQS71B7sw`](https://solscan.io/account/6w7SPiB9agGh5ctB1LWMAR9ZpnguDxYm5zGgQS71B7sw) |
+| **Lending Strategy** | [`GGf8eUHvTX3CLC3HubPpMxm8iqHKheR6ZEK1QAyozv5j`](https://solscan.io/account/GGf8eUHvTX3CLC3HubPpMxm8iqHKheR6ZEK1QAyozv5j) |
+| **Vault Program (Voltr)** | `vVoLTRjQmtFpiYoegx285Ze4gsLJ8ZxgFKVcuvmG1a8` |
+| **Drift Adaptor** | `EBN93eXs5fHGBABuajQqdsKRkCgaqtJa8vEFD6vKXiP` |
+| **Lending Adaptor** | `aVoLTRCRt3NnnchvLYH6rMYehJHwM5m45RmLBZq7PGz` |
+| **Drift Protocol** | `dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH` |
+
+---
+
+## Documentation
+
+| Document | Purpose |
+|---|---|
+| [`docs/strategy.md`](docs/strategy.md) | Deep strategy thesis — investment thesis, math formulas, expected returns, scenario analysis |
+| [`docs/risk-management.md`](docs/risk-management.md) | Risk framework — taxonomy, controls, stress scenarios, recovery procedures |
+| [`docs/objective.md`](docs/objective.md) | Hackathon details, eligibility, judging criteria, architecture diagrams |
+| [`docs/implementation.md`](docs/implementation.md) | Implementation phases, what's built, folder structure |
+| [`docs/trident-api.postman_collection.json`](docs/trident-api.postman_collection.json) | Postman collection for all API endpoints |
+
+---
+
 ## Getting Started
 
 ### Prerequisites
@@ -453,6 +503,10 @@ pnpm dev:frontend
 
 # Quality checks
 pnpm lint              # Type-check + lint all packages
+
+# Backtester (Python 3.11+)
+py -m pip install -r packages/backtester/requirements.txt
+py packages/backtester/run.py
 ```
 
 ### Database Setup
