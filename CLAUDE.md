@@ -70,7 +70,15 @@ packages/
 │       ├── components/charts/     # Recharts wrappers
 │       ├── hooks/                 # useApi (polling), useVaultState, useMetrics, useBotStatus
 │       └── lib/                   # api.ts (fetch client), types.ts, format.ts
-└── backtester/             # Python backtesting module (planned)
+└── backtester/             # Python backtesting module
+    ├── src/
+    │   ├── config.py              # BOT_CONFIG mirror
+    │   ├── data/generator.py      # Synthetic 90-day price + funding data
+    │   ├── engine/simulator.py    # Core backtest loop (mirrors JobsService)
+    │   ├── strategies/            # spread.py, funding.py, allocator.py
+    │   └── analysis/report.py     # Performance metrics + chart generation
+    ├── output/                    # Generated charts (backtest_results.png, trade_analysis.png)
+    └── run.py                     # CLI entry point
 ```
 
 ## Tech Stack
@@ -78,6 +86,7 @@ packages/
 - **Backend:** TypeScript, `@drift-labs/sdk`, `@voltr/vault-sdk`, `@solana/web3.js`, `drizzle-orm`, `express`, `pino`
 - **Frontend:** Next.js 16, React 19, Tailwind CSS v4, Recharts, shadcn/ui, next-themes
 - **DB:** PostgreSQL (Supabase), Drizzle ORM. Schema auto-generated — never edit `packages/common/database/` manually.
+- **Backtester:** Python 3.11+, pandas, numpy, matplotlib, plotly
 - **Infra:** Helius RPC, Solana mainnet-beta
 
 ## Database
@@ -118,6 +127,11 @@ pnpm db:reset               # Reset DB + re-apply all migrations
 # Vault setup (one-time, requires funded wallet)
 npx tsx packages/backend/scripts/setup-vault.ts       # Create vault + add adaptors
 npx tsx packages/backend/scripts/add-strategies.ts    # Init Drift + Lending strategies
+
+# Backtester
+py packages/backtester/run.py                         # Run 90-day backtest (default seed=42)
+py packages/backtester/run.py --seed 123 --days 180   # Custom seed + duration
+py packages/backtester/run.py --no-charts             # Skip chart generation
 ```
 
 ## Environment Variables

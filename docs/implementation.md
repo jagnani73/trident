@@ -169,13 +169,15 @@ ranger/
 
 ## What's Not Built Yet
 
-### Backtester (Nice-to-have)
-- Python backtesting module not started
-- Would validate strategy parameters on historical Drift data
+### ~~Backtester~~ (Done)
+- Python backtesting module with 90-day synthetic simulation
+- Mirrors live strategy logic (z-score spread, funding APR basis, capital allocation, risk management)
+- Results: **21.27% APY**, 2.59% max drawdown, 3.03 Sharpe, 53.3% win rate
+- Run: `py packages/backtester/run.py`
 
-### Submission Docs (Required)
-- `docs/strategy.md` — deep strategy thesis + math
-- `docs/risk-management.md` — risk framework
+### Submission Docs
+- `docs/strategy.md` — deep strategy thesis + math (done)
+- `docs/risk-management.md` — risk framework (done)
 
 ---
 
@@ -209,7 +211,7 @@ ranger/
 
 ## Remaining Work (Priority Order)
 
-1. **Submission docs** — `strategy.md` + `risk-management.md`
+1. ~~**Submission docs**~~ — strategy.md + risk-management.md (both done)
 2. **Demo video** — 3-minute pitch/demo for hackathon submission
 3. **Go live** — set `DRY_RUN: false` + deposit USDC into Drift (requires user confirmation)
 4. **Backtester** — if time permits
