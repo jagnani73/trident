@@ -10,10 +10,11 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { ChartSkeleton, TableSkeleton } from "@/components/loading-skeleton";
+import { EmptyState } from "@/components/empty-state";
 import { ZScoreChart } from "@/components/charts/zscore-chart";
 import { FundingChart } from "@/components/charts/funding-chart";
 import { useFundingRates, useSpreadMetrics } from "@/hooks/use-metrics";
-import { formatZScore, formatUsd, formatApy, formatTime } from "@/lib/format";
+import { formatZScore, formatUsd, formatApy, formatTime, marketSymbol } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 function actionColor(action: string) {
@@ -156,8 +157,52 @@ export function SignalsContent() {
                             </TableBody>
                         </Table>
                     </div>
+                ) : funding?.history && funding.history.length > 0 ? (
+                    <div>
+                        <div className="rounded-lg border border-border overflow-hidden">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow className="bg-muted">
+                                        <TableHead className="text-xs font-medium tracking-wide uppercase">Market</TableHead>
+                                        <TableHead className="text-xs font-medium tracking-wide uppercase text-right">Funding Rate</TableHead>
+                                        <TableHead className="text-xs font-medium tracking-wide uppercase text-right">APR</TableHead>
+                                        <TableHead className="text-xs font-medium tracking-wide uppercase text-right">Oracle Price</TableHead>
+                                        <TableHead className="text-xs font-medium tracking-wide uppercase text-right">Mark Price</TableHead>
+                                        <TableHead className="text-xs font-medium tracking-wide uppercase">Updated</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {/* Show latest snapshot per market from history */}
+                                    {(() => {
+                                        const latest = new Map<number, typeof funding.history[0]>();
+                                        for (const snap of funding.history) {
+                                            if (!latest.has(snap.market_index)) latest.set(snap.market_index, snap);
+                                        }
+                                        return Array.from(latest.values()).map((snap) => {
+                                            const rate = Number(snap.funding_rate);
+                                            const price = Number(snap.oracle_price);
+                                            const apr = price > 0 ? (rate / price) * 24 * 365 * 100 : 0;
+                                            return (
+                                                <TableRow key={snap.market_index} className="border-b border-border hover:bg-muted/50 transition-colors">
+                                                    <TableCell className="font-semibold text-sm">{marketSymbol(snap.market_index)}</TableCell>
+                                                    <TableCell className="text-right font-mono text-sm">{rate.toFixed(6)}</TableCell>
+                                                    <TableCell className={cn("text-right font-mono font-medium text-sm", apr > 0 ? "text-profit" : "text-loss")}>
+                                                        {formatApy(apr)}
+                                                    </TableCell>
+                                                    <TableCell className="text-right font-mono text-sm">{formatUsd(Number(snap.oracle_price))}</TableCell>
+                                                    <TableCell className="text-right font-mono text-sm">{formatUsd(Number(snap.mark_price))}</TableCell>
+                                                    <TableCell className="text-xs text-muted-foreground">{formatTime(snap.timestamp, "time")}</TableCell>
+                                                </TableRow>
+                                            );
+                                        });
+                                    })()}
+                                </TableBody>
+                            </Table>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">Showing latest historical data — live Drift unavailable</p>
+                    </div>
                 ) : (
-                    <TableSkeleton rows={3} />
+                    <EmptyState message="No funding rate data available" />
                 )}
             </div>
 

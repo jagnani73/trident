@@ -30,12 +30,8 @@ ranger/
 │   │
 │   ├── backend/
 │   │   ├── microservices/
-│   │   │   ├── bot-engine/         # Core rebalancing bot
-│   │   │   │   └── index.ts        # Tick loop: warmup → signals → risk → allocate → execute
-│   │   │   ├── data-collector/     # Drift data ingestion
-│   │   │   │   └── index.ts        # Tick loop: warmup → poll funding/spreads → write to DB
-│   │   │   └── api/                # REST API for dashboard
-│   │   │       ├── index.ts        # Express server, DB + Drift init, routes
+│   │   │   └── api/                # Unified entry point: API + JobsService
+│   │   │       ├── index.ts        # DB init → server.listen → Drift init → warmup → jobs
 │   │   │       ├── utils.ts        # apiHandler, isDriftAvailable, parsePagination, parseTimeRange
 │   │   │       ├── vault/          # vault.routes.ts, vault.service.ts
 │   │   │       ├── metrics/        # metrics.routes.ts, metrics.service.ts
@@ -43,6 +39,7 @@ ranger/
 │   │   │
 │   │   ├── services/               # Static class services (no instance state)
 │   │   │   ├── drift.service.ts    # Drift SDK wrapper — connection, markets, orders
+│   │   │   ├── jobs.service.ts     # Tick loops: collector + bot (30s interval)
 │   │   │   ├── database.service.ts # Drizzle ORM PostgreSQL connection
 │   │   │   ├── logger.service.ts   # Scoped structured logging (dependency-free)
 │   │   │   ├── spread-detector.service.ts   # Z-score computation from spread_snapshots
@@ -114,7 +111,7 @@ ranger/
 - `LoggerService` — scoped structured logging
 
 ### Phase 2: Data Pipeline
-- `data-collector` microservice — polls Drift every 30s, writes funding rates + spread ratios
+- Data collection logic (now in `JobsService.collectorTick()`) — polls Drift every 30s, writes funding rates + spread ratios
 - Warmup phase with oracle data readiness check (up to 60s timeout)
 - Historical data accumulating in DB (funding_rate_snapshots, spread_snapshots)
 
@@ -125,12 +122,19 @@ ranger/
 - `CapitalAllocatorService` — converts signals + risk assessment into concrete proposals
 
 ### Phase 4: Bot Engine
-- `bot-engine` microservice — full tick pipeline (signals → risk → allocate → execute)
-- Two-phase warmup: oracle readiness → account readiness
+- Bot tick logic (now in `JobsService.botTick()`) — full tick pipeline (signals → risk → allocate → execute)
+- Two-phase warmup: oracle readiness → account readiness (in unified entry point)
 - `initializeUserIfNeeded()` for Drift account creation
 - Proposal execution with position tracking and bot_events audit logging
 - Vault snapshot recording per tick
 - Graceful shutdown on SIGINT/SIGHUP
+
+### Phase 6: Single Process Consolidation
+- Merged 3 microservices (bot-engine, data-collector, API) into a single process
+- `JobsService` — static class managing tick loops (collector tick → bot tick, 30s interval)
+- Unified entry point: DB init → server.listen → Drift init → warmup → jobs
+- API available immediately (healthcheck, DB-only endpoints) while Drift warms up
+- Graceful degradation: if Drift fails, API still works, no jobs run
 
 ### Phase 5: API + Frontend
 - Express API server with 7 endpoints under `/api/v1/`
@@ -159,7 +163,7 @@ ranger/
 ### Setup Scripts (Critical)
 - `setup-vault.ts` — creates Ranger vault on-chain (placeholder)
 - `add-strategies.ts` — registers adaptors with vault (placeholder)
-- `seed-test-data.ts` — populates DB for testing (placeholder)
+- `100_dummy-data.up.sql` — SQL migration that seeds 48h of realistic dashboard data
 
 ### Backtester (Nice-to-have)
 - Python backtesting module not started
@@ -204,7 +208,7 @@ ranger/
 1. **Fund wallet** — send ~0.02 SOL to `3a3UWFaUDJuehbEdvkmzNUXZehCmhMWuPrK1YzAdgAyC`
 2. **RangerVaultService** — implement `@voltr/vault-sdk` wrapper
 3. **Setup scripts** — vault creation + adaptor registration
-4. **End-to-end test** — run all 3 backend services + frontend together
+4. **End-to-end test** — run backend + frontend together
 5. **Z-score computation** — verify spread detector works with accumulated data
 6. **Submission docs** — `strategy.md` + `risk-management.md`
 7. **Demo video** — 3-minute pitch/demo for hackathon submission

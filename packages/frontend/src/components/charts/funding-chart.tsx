@@ -32,8 +32,11 @@ export function FundingChart({ data, markets }: FundingChartProps) {
         const key = snap.timestamp;
         if (!timeMap.has(key)) timeMap.set(key, { time: snap.timestamp });
         const row = timeMap.get(key)!;
-        // Convert to APR: rate * 24 * 365 * 100
-        row[marketSymbol(snap.market_index)] = Number(snap.funding_rate) * 24 * 365 * 100;
+        // Convert to APR: (rate / oraclePrice) * 24 * 365 * 100
+        const price = Number(snap.oracle_price);
+        row[marketSymbol(snap.market_index)] = price > 0
+            ? (Number(snap.funding_rate) / price) * 24 * 365 * 100
+            : 0;
     }
 
     const chartData = Array.from(timeMap.values()).sort(

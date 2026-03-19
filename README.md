@@ -62,7 +62,7 @@ Drift lending and Drift trading are separate operations. The lending adaptor dep
 | Package | Role |
 |---|---|
 | `packages/common` | Shared library. Drizzle DB schema, TypeScript types (`SpreadSignal`, `FundingSignal`, `VaultState`), math utils (z-score, mean, stddev), error types. Sub-path exports: `@trident/common/database`, `/types`, `/constants`, `/errors`, `/utils`. Must be built before backend. |
-| `packages/backend` | Three microservices (bot-engine, data-collector, API server) + shared service modules (Drift SDK wrapper, spread detector, funding monitor, risk manager, capital allocator). Express API on port 8000. Static singleton services. |
+| `packages/backend` | Single process: Express API server + JobsService tick loops. Shared service modules (Drift SDK wrapper, spread detector, funding monitor, risk manager, capital allocator). Port 8000. Static singleton services. |
 | `packages/frontend` | Next.js 16 monitoring dashboard. 4 pages (Dashboard, Positions, Performance, Signals). Polls backend API every 10-15 seconds. Dark theme. Not user-facing — this is for vault managers. |
 | `packages/backtester` | Python backtesting module (planned). Historical strategy validation using Drift S3 data. |
 
@@ -174,7 +174,7 @@ This means: "SOL/ETH ratio was 2.15 standard deviations above the mean, so we we
 
 **What it is:** An audit log entry for every decision the bot makes — ticks, position opens/closes, errors, emergency exits.
 
-**Source:** Bot-engine and data-collector both log events after each tick.
+**Source:** JobsService logs events after each collector tick and bot tick.
 
 **Storage:** `bot_events` table — `id`, `event_type` (tick/open_position/close_position/rebalance/emergency_exit/error), `details` (JSONB), `timestamp`.
 
@@ -210,17 +210,15 @@ This means: "SOL/ETH ratio was 2.15 standard deviations above the mean, so we we
 
 ## Architecture
 
-### Why Three Microservices?
+### Single Process Design
 
-The backend runs as three independent processes. Each can be started, stopped, and restarted independently.
+The backend runs as a single process (`pnpm dev`). On startup it initializes DB, starts the Express API server (healthcheck available immediately), then connects to Drift, runs warmup, and starts `JobsService` tick loops. If Drift initialization fails, the API still serves DB-only responses — no jobs run.
 
-| Process | Command | What it does | Can it run alone? |
-|---|---|---|---|
-| **data-collector** | `pnpm dev:collector` | Polls Drift every 30s, writes funding rates + spread ratios to DB | Yes — just data ingestion, no trading |
-| **bot-engine** | `pnpm dev:bot` | Reads signals from DB + live Drift, decides and executes trades | Yes — but needs historical data from collector |
-| **api** | `pnpm dev:api` | Serves REST endpoints for the dashboard | Yes — reads from DB + optionally live Drift |
+`JobsService` runs a 30s tick loop with two phases per tick:
+1. **Collector tick** — polls Drift for funding rates + spread prices, writes to DB
+2. **Bot tick** — evaluates signals, assesses risk, allocates capital, executes trades
 
-**Why separate the collector from the bot?** They have different failure modes. If the bot crashes, data collection continues — no gaps in historical data. If the collector crashes, the bot still has its last-known signals and can operate (just with stale data). The API is completely independent of both.
+The collector tick runs first so the bot always acts on the freshest data. A mutex prevents tick overlap — if a tick takes >30s, the next one is skipped.
 
 ### Data Flow
 
@@ -228,33 +226,24 @@ The backend runs as three independent processes. Each can be started, stopped, a
                   DRIFT PROTOCOL (on-chain)
                   oracle prices, funding rates, account state
                          │
-            ┌────────────┼────────────┐
-            │            │            │
-            ▼            │            ▼
-    ┌───────────────┐    │    ┌───────────────┐
-    │ data-collector │    │    │  bot-engine   │
-    │  (ingest only) │    │    │ (decide+exec) │
-    └───────┬───────┘    │    └───┬───────┬───┘
-            │            │        │       │
-            │ write      │        │ read  │ write
-            ▼            │        ▼       ▼
+                         ▼
     ┌────────────────────────────────────────────┐
-    │              PostgreSQL                     │
-    │  funding_rate_snapshots  spread_snapshots   │
-    │  positions  vault_snapshots  bot_events     │
+    │         Single Backend Process              │
+    │                                            │
+    │  JobsService (30s tick loop)               │
+    │  ├── collector tick → write to DB          │
+    │  └── bot tick → read signals → execute     │
+    │                                            │
+    │  Express API (:8000)                       │
+    │  └── serves dashboard data from DB + Drift │
     └──────────────────┬─────────────────────────┘
-                       │ read
-                       ▼
-               ┌──────────────┐
-               │   API server  │ ◄── optional live Drift connection
-               │  :8000        │
-               └──────┬───────┘
-                      │ JSON
-                      ▼
-               ┌──────────────┐
-               │   Frontend    │
-               │  Next.js :3000│
-               └──────────────┘
+                       │
+            ┌──────────┴──────────┐
+            ▼                     ▼
+    ┌──────────────┐    ┌──────────────┐
+    │  PostgreSQL   │    │   Frontend    │
+    │  (Supabase)   │    │  Next.js :3000│
+    └──────────────┘    └──────────────┘
 ```
 
 ### Bot Decision Pipeline (Per Tick)
@@ -362,7 +351,7 @@ These scripts run once to configure on-chain state. They are **not** part of the
 |---|---|---|
 | `setup-vault.ts` | Creates the Ranger vault on-chain. Registers the vault with the Ranger program, sets the manager wallet. | Once, before anything else. Produces a `VAULT_ADDRESS`. |
 | `add-strategies.ts` | Registers the Drift and Lending adaptors with the vault. Initializes strategy slots so the bot can deposit/withdraw. | Once, after vault creation. |
-| `seed-test-data.ts` | Populates the database with sample snapshots for testing the dashboard. | Optional, for development only. |
+| `100_dummy-data.up.sql` | SQL migration that seeds 48h of realistic dashboard data (funding rates, spreads, positions, vault snapshots, bot events). | Optional, for development only. Run via `pnpm db:migrate`. |
 
 **Why do these exist?** On-chain programs on Solana require explicit account initialization. You can't just "start using" a vault — you must first create it (allocates on-chain storage, costs rent in SOL), then tell it which adaptors it's allowed to use. This is similar to deploying a smart contract on Ethereum, except Solana separates the program (deployed once) from accounts (created per user/vault).
 
@@ -447,14 +436,11 @@ cp packages/frontend/.env.example packages/frontend/.env.local
 ```bash
 pnpm install
 
-# Start individual services
-pnpm dev:api           # API server only (port 8000)
-pnpm dev:collector     # Data collector only (writes to DB)
-pnpm dev:bot           # Bot engine only (reads signals, executes trades)
-pnpm dev:frontend      # Next.js dashboard (port 3000)
-
-# Start all backend services together
+# Start backend (API + jobs) on port 8000
 pnpm dev
+
+# Start frontend dashboard on port 3000
+pnpm dev:frontend
 
 # Quality checks
 pnpm lint              # Type-check + lint all packages
@@ -475,8 +461,6 @@ pnpm build:common      # Regenerate TypeScript types from DB schema
 ### First Run Checklist
 
 1. **Database** — ensure `DATABASE_URL` points to a PostgreSQL instance with migrations applied
-2. **Start API** — `pnpm dev:api` → hit `http://localhost:8000/healthcheck`
-3. **Start collector** — `pnpm dev:collector` → watch funding/spread data populate in DB
-4. **Start frontend** — `pnpm dev:frontend` → open `http://localhost:3000`
-5. **Fund wallet** — send ~0.02 SOL to the wallet address for Drift account creation
-6. **Start bot** — `pnpm dev:bot` → bot will initialize Drift user account and begin tick loop
+2. **Start backend** — `pnpm dev` → hit `http://localhost:8000/healthcheck` (API starts immediately, then Drift connects + jobs begin)
+3. **Start frontend** — `pnpm dev:frontend` → open `http://localhost:3000`
+4. **Fund wallet** — send ~0.02 SOL to the wallet address for Drift account creation (needed for bot tick to execute trades)

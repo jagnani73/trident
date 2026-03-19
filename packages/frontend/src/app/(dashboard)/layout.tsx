@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 import {
     LayoutDashboard,
     ArrowLeftRight,
@@ -24,8 +25,10 @@ const NAV_ITEMS = [
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
-    const { theme, setTheme } = useTheme();
+    const { resolvedTheme, setTheme } = useTheme();
     const { data: botStatus } = useBotStatus();
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
 
     const isActive = (href: string) => {
         if (href === "/") return pathname === "/";
@@ -65,10 +68,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     {/* Theme toggle */}
                     <button
                         type="button"
-                        onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                        onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
                         className="text-muted-foreground hover:text-foreground transition-colors p-1"
                     >
-                        {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+                        {mounted ? (
+                            resolvedTheme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />
+                        ) : (
+                            <span className="size-4" />
+                        )}
                     </button>
 
                     {/* Bot status */}

@@ -5,9 +5,6 @@
     "description": "Hybrid yield vault for Ranger Build-A-Bear Hackathon",
     "scripts": {
         "dev": "pnpm --filter @trident/backend dev",
-        "dev:bot": "pnpm --filter @trident/backend dev:bot",
-        "dev:collector": "pnpm --filter @trident/backend dev:collector",
-        "dev:api": "pnpm --filter @trident/backend dev:api",
         "dev:frontend": "pnpm --filter @trident/frontend dev",
         "lint": "pnpm -r lint",
         "lint:root": "eslint .",

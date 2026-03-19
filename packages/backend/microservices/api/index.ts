@@ -2,6 +2,8 @@ import { vaultRouter } from "./vault/vault.routes";
 import { metricsRouter } from "./metrics/metrics.routes";
 import { botRouter } from "./bot/bot.routes";
 import { DatabaseService } from "../../services/database.service";
+import { DriftService } from "../../services/drift.service";
+import { JobsService } from "../../services/jobs.service";
 import { LoggerService } from "../../services/logger.service";
 import { CORS_CONFIG } from "../../utils/constants";
 import { type AppError, convertToAppError, ErrorScope } from "@trident/common/errors";
@@ -64,30 +66,30 @@ app.use((error: Error | unknown, _req: Request, res: Response, _next: NextFuncti
     const log = logger.scoped("init");
     try {
         await DatabaseService.init();
-        try {
-            const { DriftService } = await import("../../services/drift.service");
-            await DriftService.init();
-        } catch (_error) {
-            log.warn("drift-init-skipped", {
-                message: "DriftService failed to load, running without Drift",
-            });
-        }
+
         const env: string = process.env.NODE_ENV || "development";
         const port: number = +(process.env.PORT || 8000);
         server.listen(port, () => {
             log.info("listening", { port, env });
         });
+
+        // Jobs handles Drift init + warmup + tick loop (runs after server is up)
+        await JobsService.start();
     } catch (error) {
         log.error("fatal-startup-error", { error });
         process.exit(1);
     }
 })();
 
-process.on("SIGINT", () => {
+async function shutdown() {
+    const log = logger.scoped("shutdown");
+    log.info("shutting-down");
+    JobsService.stop();
+    await DriftService.shutdown();
     process.exit(0);
-});
-process.on("SIGHUP", () => {
-    process.exit(0);
-});
+}
+
+process.on("SIGINT", shutdown);
+process.on("SIGHUP", shutdown);
 
 export default app;

@@ -18,16 +18,13 @@ interface AllocationBarProps {
 }
 
 export function AllocationBar({ data }: AllocationBarProps) {
-    const chartData = data.map((d) => {
-        const total = Number(d.total_value_usdc) || 1;
-        return {
-            time: d.timestamp,
-            Lending: (Number(d.lending_allocation) / total) * 100,
-            Spread: (Number(d.spread_allocation) / total) * 100,
-            Basis: (Number(d.basis_allocation) / total) * 100,
-            Idle: (Number(d.idle_allocation) / total) * 100,
-        };
-    });
+    const chartData = data.map((d) => ({
+        time: d.timestamp,
+        Lending: Number(d.lending_allocation) * 100,
+        Spread: Number(d.spread_allocation) * 100,
+        Basis: Number(d.basis_allocation) * 100,
+        Idle: Number(d.idle_allocation) * 100,
+    }));
 
     return (
         <div className="bg-card border border-border rounded-lg p-4">

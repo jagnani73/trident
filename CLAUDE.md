@@ -18,14 +18,12 @@ An off-chain bot monitors conditions every 30 seconds and rebalances capital bet
 
 ## Architecture
 
-Three independent backend processes + a frontend dashboard:
+Single backend process + a frontend dashboard:
 
-- **data-collector** (`pnpm dev:collector`) — polls Drift every 30s, writes funding rates + spread ratios to DB. No decision-making.
-- **bot-engine** (`pnpm dev:bot`) — reads signals from DB + live Drift, evaluates risk, executes trades. The only process that touches on-chain funds.
-- **api** (`pnpm dev:api`) — REST API on port 8000 for the dashboard. Reads from DB + optionally live Drift.
+- **backend** (`pnpm dev`) — Express API on port 8000 + `JobsService` tick loops. Initializes DB → starts HTTP server → connects to Drift → runs warmup → starts jobs. If Drift fails, API still serves DB-only responses.
 - **frontend** (`pnpm dev:frontend`) — Next.js 16 dashboard on port 3000. Polls API every 10-15s.
 
-They can start/stop independently. If collector crashes, bot has stale data but still runs. If bot crashes, collector keeps recording. API is fully independent.
+`JobsService` runs a 30s tick loop: collector tick (funding rates + spread prices → DB) then bot tick (signals → risk → allocate → execute). Tick overlap is guarded — if a tick takes >30s, the next one is skipped.
 
 ## Monorepo Structure
 
@@ -40,15 +38,15 @@ packages/
 │       └── errors/         # AppError class with scopes
 ├── backend/
 │   ├── microservices/
-│   │   ├── bot-engine/     # Tick loop: signals → risk → allocate → execute
-│   │   ├── data-collector/ # Tick loop: poll Drift → write to DB
-│   │   └── api/            # REST API (Express) for dashboard
+│   │   └── api/            # Unified entry point: Express API + JobsService
+│   │       ├── index.ts    # DB init → server.listen → Drift init → warmup → jobs
 │   │       ├── utils.ts    # apiHandler, parsePagination, parseTimeRange, isDriftAvailable
 │   │       ├── vault/      # /api/v1/vault — state, positions, history
 │   │       ├── metrics/    # /api/v1/metrics — funding rates, spread z-scores
 │   │       └── bot/        # /api/v1/bot — status, events
 │   ├── services/           # Flat *.service.ts files (static classes, no instance state)
 │   │   ├── drift.service.ts           # Drift SDK wrapper (connection, markets, orders)
+│   │   ├── jobs.service.ts            # Tick loops: collector + bot (30s interval)
 │   │   ├── spread-detector.service.ts # Z-score computation, entry/exit signals
 │   │   ├── funding-monitor.service.ts # Funding APR tracking, flip detection
 │   │   ├── risk-manager.service.ts    # Drawdown, health rate, stop-loss, veto power
@@ -92,11 +90,11 @@ Schema is auto-generated from live DB. **Never edit `packages/common/database/` 
 
 | Table | Written by | Purpose |
 |---|---|---|
-| `funding_rate_snapshots` | data-collector | Funding rates per market per tick |
-| `spread_snapshots` | data-collector + spread-detector | Pair ratios + z-scores |
-| `positions` | bot-engine | Open/closed spread and basis positions |
-| `vault_snapshots` | bot-engine | Periodic vault state for charts |
-| `bot_events` | bot-engine + data-collector | Audit log of all decisions |
+| `funding_rate_snapshots` | JobsService (collector tick) | Funding rates per market per tick |
+| `spread_snapshots` | JobsService (collector tick) + spread-detector | Pair ratios + z-scores |
+| `positions` | JobsService (bot tick) | Open/closed spread and basis positions |
+| `vault_snapshots` | JobsService (bot tick) | Periodic vault state for charts |
+| `bot_events` | JobsService (both ticks) | Audit log of all decisions |
 
 ## Key Program IDs
 
@@ -107,10 +105,7 @@ Schema is auto-generated from live DB. **Never edit `packages/common/database/` 
 ## Commands
 
 ```bash
-pnpm dev                    # Start all backend services
-pnpm dev:bot                # Start bot-engine only
-pnpm dev:collector          # Start data-collector only
-pnpm dev:api                # Start API server only (port 8000)
+pnpm dev                    # Start backend (API + jobs) on port 8000
 pnpm dev:frontend           # Start Next.js dashboard (port 3000)
 pnpm lint                   # Type-check + lint all packages
 pnpm build:common           # Regenerate DB schema from migrations
@@ -139,16 +134,16 @@ All under `/api/v1/`, response format: `{ success: boolean, data: T }`.
 
 - All thresholds and magic numbers live in `BOT_CONFIG` (`packages/backend/utils/constants.ts`) — never inline
 - Market-level constants (adaptor IDs, risk params) live in `packages/common/constants/`
-- Services are static classes — microservices own the lifecycle
+- Services are static classes — single process owns the lifecycle
 - Logging: `LoggerService.scoped("service-name")` for structured, scoped output
-- Drift SDK connection initialized once per microservice, shared across services
+- Drift SDK connection initialized once, shared across all services
 - All on-chain transactions log to `bot_events` before and after execution
 - Risk manager has veto power over all position changes
 
 ## Current State (as of 2026-03-19)
 
 - **Working:** API server (all 7 endpoints), live Drift market data (funding + spreads), DB with historical data, frontend dashboard (4 pages)
-- **Not yet implemented:** RangerVaultService (stub), setup scripts (setup-vault.ts, add-strategies.ts, seed-test-data.ts)
+- **Not yet implemented:** RangerVaultService (stub), setup scripts (setup-vault.ts, add-strategies.ts)
 - **Blocker:** Wallet needs ~0.02 SOL to create Drift subaccount (bot-engine errors with "no user for user id")
 
 ## Documentation
