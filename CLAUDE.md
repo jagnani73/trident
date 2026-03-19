@@ -33,6 +33,10 @@ packages/
 │   │   ├── bot-engine/     # Core rebalancing bot (the brain)
 │   │   ├── data-collector/ # Drift data ingestion + caching
 │   │   └── api/            # REST API (Express) for dashboard
+│   │       ├── utils.ts    # apiHandler, parsePagination, parseTimeRange, isDriftAvailable
+│   │       ├── vault/      # /api/v1/vault — state, positions, history
+│   │       ├── metrics/    # /api/v1/metrics — funding rates, spread z-scores
+│   │       └── bot/        # /api/v1/bot — status (inferred from DB), events
 │   ├── services/           # Flat *.service.ts files (static classes)
 │   │   ├── drift.service.ts           # Drift SDK wrapper
 │   │   ├── spread-detector.service.ts # Z-score spread signals
@@ -45,7 +49,16 @@ packages/
 │   ├── utils/
 │   │   └── constants.ts    # BOT_CONFIG, market indexes, spread pairs
 │   └── db-migrations/      # PostgreSQL migrations (dev mode)
-├── frontend/               # Next.js 15 monitoring dashboard
+├── frontend/               # Next.js 16 monitoring dashboard
+│   └── src/
+│       ├── app/(dashboard)/ # Route group: layout with top bar + nav
+│       │   ├── page.tsx           # Dashboard — KPIs, allocation donut, TVL chart
+│       │   ├── positions/         # Position table with filters
+│       │   ├── performance/       # APY trends, TVL, allocation bar chart
+│       │   └── signals/           # Live spread/funding signals + history charts
+│       ├── components/charts/     # Recharts wrappers (TVL, APY, Z-Score, Funding, Allocation)
+│       ├── hooks/                 # useApi (polling), useVaultState, useMetrics, useBotStatus
+│       └── lib/                   # api.ts (fetch client), types.ts, format.ts
 └── backtester/             # Python backtesting module
 ```
 
@@ -62,8 +75,10 @@ packages/
 
 ### Frontend (TypeScript)
 
-- Next.js 15 (App Router) + Tailwind CSS v4
-- `recharts` or `lightweight-charts` — performance charts
+- Next.js 16 (App Router) + React 19 + Tailwind CSS v4
+- `recharts` — performance charts
+- `next-themes` — dark/light mode toggle
+- shadcn/ui (new-york style) — Card, Badge, Table, Button, Tooltip
 
 ### Backtester (Python)
 
@@ -123,9 +138,25 @@ pnpm db:reset               # Reset DB + re-apply all migrations
 - All on-chain transactions log to `bot_events` table before and after execution
 - Risk manager has veto power over all position changes — allocator proposals pass through it
 
+## API Endpoints
+
+All under `/api/v1/`, response format: `{ success: boolean, data: T }`.
+
+| Endpoint | Description |
+|---|---|
+| `GET /healthcheck` | Server uptime |
+| `GET /vault/state` | Live vault state (Drift + DB fallback) |
+| `GET /vault/positions?status=&type=&limit=&offset=` | Positions with filters |
+| `GET /vault/history?from=&to=&limit=` | Vault snapshots for charts |
+| `GET /metrics/funding?live=&market_index=&from=&to=` | Funding rates (live + history) |
+| `GET /metrics/spreads?live=&pair=&from=&to=` | Spread z-scores (live + history) |
+| `GET /bot/status` | Bot running state (inferred from tick events) |
+| `GET /bot/events?event_type=&from=&to=&limit=` | Bot audit log |
+
 ## Documentation
 
 - `docs/objective.md` — hackathon details, strategy overview, architecture diagrams (Mermaid)
 - `docs/implementation.md` — full implementation plan, folder structure, phases
 - `docs/strategy.md` — deep strategy thesis + math (hackathon submission)
 - `docs/risk-management.md` — risk framework (hackathon submission)
+- `docs/trident-api.postman_collection.json` — Postman collection for all API endpoints

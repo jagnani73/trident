@@ -92,6 +92,28 @@ export class DriftService {
         }
     }
 
+    /**
+     * Ensure a Drift user account exists on-chain for the active subaccount.
+     * Call during bot-engine warmup — not needed for data-collector (read-only).
+     */
+    static async initializeUserIfNeeded(): Promise<void> {
+        const log = logger.scoped("init-user");
+        const client = this.getClient();
+
+        if (this.hasUser()) {
+            log.info("user-exists", { subAccount: client.activeSubAccountId });
+            return;
+        }
+
+        log.info("creating-user", {
+            wallet: client.wallet.publicKey.toBase58(),
+            subAccount: client.activeSubAccountId,
+        });
+
+        const [txSig] = await client.initializeUserAccount();
+        log.info("user-created", { tx: txSig, subAccount: client.activeSubAccountId });
+    }
+
     static async shutdown(): Promise<void> {
         if (this.client) {
             await this.client.unsubscribe();
@@ -181,11 +203,13 @@ export class DriftService {
     // ── Positions ────────────────────────────────────────────────
 
     static getPerpPosition(marketIndex: number): PerpPosition | undefined {
+        if (!this.hasUser()) return undefined;
         const user = this.getClient().getUser();
         return user.getPerpPosition(marketIndex) ?? undefined;
     }
 
     static getSpotPosition(marketIndex: number): SpotPosition | undefined {
+        if (!this.hasUser()) return undefined;
         const user = this.getClient().getUser();
         return user.getSpotPosition(marketIndex) ?? undefined;
     }
@@ -215,17 +239,30 @@ export class DriftService {
 
     // ── Account Health ───────────────────────────────────────────
 
+    /** Check if the DriftClient has a loaded user account (subaccount exists on-chain). */
+    static hasUser(): boolean {
+        try {
+            this.getClient().getUser();
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
     static getFreeCollateral(): number {
+        if (!this.hasUser()) return 0;
         const user = this.getClient().getUser();
         return convertToNumber(user.getFreeCollateral(), QUOTE_PRECISION);
     }
 
     static getTotalCollateral(): number {
+        if (!this.hasUser()) return 0;
         const user = this.getClient().getUser();
         return convertToNumber(user.getTotalCollateral(), QUOTE_PRECISION);
     }
 
     static getLeverage(): number {
+        if (!this.hasUser()) return 0;
         const user = this.getClient().getUser();
         return convertToNumber(user.getLeverage(), LEVERAGE_PRECISION);
     }

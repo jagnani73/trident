@@ -15,6 +15,7 @@ const ENTRY_APR_PCT = BOT_CONFIG.FUNDING_ENTRY_THRESHOLD * 100;
 export class FundingMonitorService {
     /** Evaluate all perp markets. Returns one signal per market. */
     static async evaluateAll(): Promise<FundingSignal[]> {
+        logger.debug("evaluate-all-start", { marketCount: Object.keys(PERP_MARKETS).length });
         const signals: FundingSignal[] = [];
 
         for (const [symbol, marketIndex] of Object.entries(PERP_MARKETS)) {
@@ -55,6 +56,17 @@ export class FundingMonitorService {
 
         const isFlip = previousApr !== 0 && Math.sign(currentApr) !== Math.sign(previousApr);
         const action = this.resolveAction(currentApr, isFlip);
+
+        logger.debug("evaluated", {
+            symbol,
+            dataPoints: rows.length,
+            currentApr: currentApr.toFixed(4),
+            previousApr: previousApr.toFixed(4),
+            avgApr: avgApr.toFixed(4),
+            isFlip,
+            threshold: ENTRY_APR_PCT.toFixed(1),
+            action,
+        });
 
         const signal: FundingSignal = {
             marketIndex,

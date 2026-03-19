@@ -19,6 +19,13 @@ export class RiskManagerService {
 
     /** Run full risk assessment. Called once per bot tick before allocation. */
     static async assess(): Promise<RiskAssessment> {
+        const hasAccount = DriftService.hasUser();
+        if (!hasAccount) {
+            logger.warn("no-drift-account", {
+                message: "Drift subaccount not found on-chain — returning safe defaults (no positions allowed)",
+            });
+        }
+
         const totalValue = DriftService.getTotalCollateral();
         const freeCollateral = DriftService.getFreeCollateral();
         const healthRate = totalValue > 0 ? freeCollateral / totalValue : 1;
@@ -27,6 +34,17 @@ export class RiskManagerService {
         const openPositions = await this.getOpenPositions();
         const allocations = this.computeAllocations(totalValue, openPositions);
         const positionsToClose = this.checkPositionLimits(openPositions);
+
+        logger.debug("state", {
+            totalValueUsdc: totalValue.toFixed(2),
+            freeCollateral: freeCollateral.toFixed(2),
+            healthRate: healthRate.toFixed(3),
+            drawdownPct: (drawdownPct * 100).toFixed(2),
+            openPositions: openPositions.length,
+            lendingUsdc: allocations.lendingUsdc.toFixed(2),
+            spreadUsdc: allocations.spreadUsdc.toFixed(2),
+            basisUsdc: allocations.basisUsdc.toFixed(2),
+        });
 
         // Emergency conditions
         let emergencyExit = false;
@@ -48,6 +66,12 @@ export class RiskManagerService {
         const inCooldown = this.isInCooldown();
         const canOpen = !emergencyExit && !inCooldown;
 
+        if (inCooldown) {
+            logger.debug("in-cooldown", {
+                remainingMs: BOT_CONFIG.EMERGENCY_COOLDOWN_MS - (Date.now() - (this.lastEmergencyExitAt ?? 0)),
+            });
+        }
+
         const maxNewSpreadUsdc = canOpen
             ? Math.max(0, totalValue * BOT_CONFIG.MAX_SPREAD_ALLOCATION - allocations.spreadUsdc)
             : 0;
@@ -55,7 +79,7 @@ export class RiskManagerService {
             ? Math.max(0, totalValue * BOT_CONFIG.MAX_BASIS_ALLOCATION - allocations.basisUsdc)
             : 0;
 
-        return {
+        const result: RiskAssessment = {
             emergencyExit,
             emergencyReason,
             canOpenSpread: canOpen && maxNewSpreadUsdc >= BOT_CONFIG.MIN_POSITION_SIZE_USDC,
@@ -67,6 +91,17 @@ export class RiskManagerService {
             healthRate,
             timestamp: new Date().toISOString(),
         };
+
+        logger.info("assessed", {
+            emergencyExit,
+            canOpenSpread: result.canOpenSpread,
+            canOpenBasis: result.canOpenBasis,
+            maxNewSpreadUsdc: maxNewSpreadUsdc.toFixed(2),
+            maxNewBasisUsdc: maxNewBasisUsdc.toFixed(2),
+            positionsToClose: positionsToClose.length,
+        });
+
+        return result;
     }
 
     /** Get current allocation breakdown. Public for API use. */
@@ -126,6 +161,9 @@ export class RiskManagerService {
                     logger.info("stop-loss-triggered", {
                         positionId: pos.id,
                         lossPct: (lossPct * 100).toFixed(2),
+                        threshold: (BOT_CONFIG.POSITION_STOP_LOSS_PCT * 100).toFixed(1),
+                        unrealizedPnl: posInfo.unrealizedPnl.toFixed(2),
+                        sizeUsdc: sizeUsdc.toFixed(2),
                     });
                     continue;
                 }
@@ -133,11 +171,13 @@ export class RiskManagerService {
 
             // Check max age
             const openedAt = new Date(pos.opened_at).getTime();
-            if (now - openedAt > BOT_CONFIG.MAX_POSITION_AGE_MS) {
+            const ageMs = now - openedAt;
+            if (ageMs > BOT_CONFIG.MAX_POSITION_AGE_MS) {
                 toClose.push({ positionId: pos.id, reason: "max_age", marketIndexes });
                 logger.info("max-age-triggered", {
                     positionId: pos.id,
-                    ageMs: now - openedAt,
+                    ageHours: (ageMs / 3_600_000).toFixed(1),
+                    maxAgeHours: (BOT_CONFIG.MAX_POSITION_AGE_MS / 3_600_000).toFixed(1),
                 });
             }
         }

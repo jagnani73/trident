@@ -12,6 +12,7 @@ const logger = LoggerService.scoped("spread-detector");
 export class SpreadDetectorService {
     /** Evaluate all configured spread pairs. Returns one signal per pair. */
     static async evaluateAll(): Promise<SpreadSignal[]> {
+        logger.debug("evaluate-all-start", { pairCount: SPREAD_PAIRS.length });
         const signals: SpreadSignal[] = [];
 
         for (const { symbolA, symbolB } of SPREAD_PAIRS) {
@@ -45,13 +46,23 @@ export class SpreadDetectorService {
         const latestRatio = ratios[0] ?? 0;
         const latestId = rows[0]?.id;
 
-        const z = ratios.length >= BOT_CONFIG.MIN_ZSCORE_DATA_POINTS
-            ? zScore(latestRatio, ratios)
-            : null;
+        const hasEnoughData = ratios.length >= BOT_CONFIG.MIN_ZSCORE_DATA_POINTS;
+        const z = hasEnoughData ? zScore(latestRatio, ratios) : null;
 
         const meanRatio = mean(ratios);
         const confidence = Math.min(1, ratios.length / BOT_CONFIG.ZSCORE_LOOKBACK_COUNT);
         const action = this.resolveAction(z);
+
+        logger.debug("evaluated", {
+            pairName,
+            dataPoints: ratios.length,
+            hasEnoughData,
+            latestRatio: latestRatio.toFixed(6),
+            meanRatio: meanRatio.toFixed(6),
+            zScore: z?.toFixed(4) ?? "null",
+            confidence: confidence.toFixed(3),
+            action,
+        });
 
         // Write computed z-score back to the latest snapshot row
         if (latestId && z !== null) {

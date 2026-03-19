@@ -30,3 +30,6 @@ packages/backtester/data_cache/
 
 # MCP config (contains credentials)
 .mcp.json
+
+# Session handoffs
+.claude/handoffs/

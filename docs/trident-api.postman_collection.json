@@ -1,0 +1,342 @@
+{
+	"info": {
+		"name": "Trident API",
+		"description": "REST API for the Trident hybrid yield vault dashboard. Base URL: http://localhost:8000",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Health",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/healthcheck",
+							"host": ["{{base_url}}"],
+							"path": ["healthcheck"]
+						},
+						"description": "Returns server uptime and timestamp. Use to verify the API is running."
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n  \"success\": true,\n  \"timestamp\": \"2026-03-19T12:00:00.000Z\",\n  \"uptime\": 1234.56\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Vault",
+			"item": [
+				{
+					"name": "Get Vault State",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/vault/state",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "vault", "state"]
+						},
+						"description": "Returns the current vault state including total value, collateral, allocations, APY, and risk metrics. When Drift is connected, returns live data; otherwise falls back to the latest DB snapshot."
+					},
+					"response": [
+						{
+							"name": "Live Data",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"live\": true,\n    \"totalValueUsdc\": 1000.00,\n    \"freeCollateral\": 750.50,\n    \"leverage\": 0.25,\n    \"allocations\": {\n      \"totalValueUsdc\": 1000.00,\n      \"lendingUsdc\": 300.00,\n      \"spreadUsdc\": 400.00,\n      \"basisUsdc\": 200.00,\n      \"idleUsdc\": 100.00\n    },\n    \"apy24h\": 12.50,\n    \"apy7d\": 10.30,\n    \"drawdownPct\": 0.015,\n    \"healthRate\": 2.50,\n    \"activePositionCount\": 3,\n    \"timestamp\": \"2026-03-19T12:00:00.000Z\"\n  }\n}"
+						},
+						{
+							"name": "DB Fallback",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"live\": false,\n    \"totalValueUsdc\": 950.00,\n    \"freeCollateral\": 0,\n    \"leverage\": 0,\n    \"allocations\": null,\n    \"apy24h\": 11.20,\n    \"apy7d\": 9.80,\n    \"drawdownPct\": 0.02,\n    \"healthRate\": 0,\n    \"activePositionCount\": 2,\n    \"timestamp\": \"2026-03-19T12:00:00.000Z\"\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Positions (All)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/vault/positions",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "vault", "positions"]
+						},
+						"description": "Returns all positions with optional filtering by status and type.\n\nQuery params:\n- `status` (optional): \"open\" | \"closed\"\n- `type` (optional): \"spread\" | \"basis\"\n- `limit` (optional, default 50, max 500)\n- `offset` (optional, default 0)"
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"items\": [\n      {\n        \"id\": \"uuid-1\",\n        \"type\": \"spread\",\n        \"status\": \"open\",\n        \"market_a_index\": 0,\n        \"market_b_index\": 2,\n        \"side_a\": \"long\",\n        \"side_b\": \"short\",\n        \"size_usdc\": \"200.000000\",\n        \"entry_price_a\": \"145.500000\",\n        \"entry_price_b\": \"3200.000000\",\n        \"exit_price_a\": null,\n        \"exit_price_b\": null,\n        \"entry_z_score\": \"2.3400\",\n        \"exit_z_score\": null,\n        \"entry_funding_rate\": null,\n        \"realized_pnl\": null,\n        \"close_reason\": null,\n        \"opened_at\": \"2026-03-19T10:00:00.000Z\",\n        \"closed_at\": null\n      }\n    ],\n    \"total\": 1\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Positions (Open Only)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/vault/positions?status=open",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "vault", "positions"],
+							"query": [
+								{ "key": "status", "value": "open" }
+							]
+						},
+						"description": "Returns only open positions."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Positions (Closed Spread)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/vault/positions?status=closed&type=spread",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "vault", "positions"],
+							"query": [
+								{ "key": "status", "value": "closed" },
+								{ "key": "type", "value": "spread" }
+							]
+						},
+						"description": "Returns closed spread positions only."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Vault History",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/vault/history",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "vault", "history"]
+						},
+						"description": "Returns vault snapshots for charting. Ordered by timestamp ASC.\n\nQuery params:\n- `from` (optional, ISO date, default: 24h ago)\n- `to` (optional, ISO date, default: now)\n- `limit` (optional, default 500, max 2000)"
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": \"uuid-1\",\n      \"total_value_usdc\": \"1000.000000\",\n      \"lending_allocation\": \"300.000000\",\n      \"spread_allocation\": \"400.000000\",\n      \"basis_allocation\": \"200.000000\",\n      \"idle_allocation\": \"100.000000\",\n      \"lp_share_price\": \"1.0000000000\",\n      \"apy_24h\": \"12.5000\",\n      \"apy_7d\": \"10.3000\",\n      \"drawdown_from_hwm\": \"0.015000\",\n      \"timestamp\": \"2026-03-19T10:00:00.000Z\"\n    }\n  ]\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Vault History (Time Range)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/vault/history?from=2026-03-18T00:00:00Z&to=2026-03-19T00:00:00Z&limit=100",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "vault", "history"],
+							"query": [
+								{ "key": "from", "value": "2026-03-18T00:00:00Z" },
+								{ "key": "to", "value": "2026-03-19T00:00:00Z" },
+								{ "key": "limit", "value": "100" }
+							]
+						},
+						"description": "Returns vault snapshots within a specific time range."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Metrics",
+			"item": [
+				{
+					"name": "Get Funding Rates",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/metrics/funding",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "metrics", "funding"]
+						},
+						"description": "Returns live funding rates from Drift and historical funding rate snapshots from DB.\n\nQuery params:\n- `live` (optional, default \"true\"): Set to \"false\" to skip live Drift data\n- `market_index` (optional): Filter historical data by market (0=SOL, 1=BTC, 2=ETH)\n- `from` / `to` (optional, ISO dates): Time range for historical data\n- `limit` / `offset` (optional): Pagination for historical data"
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"live\": [\n      {\n        \"marketIndex\": 0,\n        \"symbol\": \"SOL-PERP\",\n        \"fundingRate\": 0.000012,\n        \"fundingRateApr\": 10.51,\n        \"oraclePrice\": 145.50,\n        \"markPrice\": 145.55,\n        \"lastFundingTs\": 1710849600\n      }\n    ],\n    \"history\": [\n      {\n        \"id\": \"uuid-1\",\n        \"market_index\": 0,\n        \"funding_rate\": \"0.0000120000\",\n        \"oracle_price\": \"145.500000\",\n        \"mark_price\": \"145.550000\",\n        \"timestamp\": \"2026-03-19T10:00:00.000Z\"\n      }\n    ]\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Funding Rates (SOL Only)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/metrics/funding?market_index=0&from=2026-03-18T00:00:00Z&to=2026-03-19T00:00:00Z",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "metrics", "funding"],
+							"query": [
+								{ "key": "market_index", "value": "0" },
+								{ "key": "from", "value": "2026-03-18T00:00:00Z" },
+								{ "key": "to", "value": "2026-03-19T00:00:00Z" }
+							]
+						},
+						"description": "Returns SOL funding rates for a specific day."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Spread Metrics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/metrics/spreads",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "metrics", "spreads"]
+						},
+						"description": "Returns live spread prices with z-scores and historical spread snapshots.\n\nQuery params:\n- `live` (optional, default \"true\"): Set to \"false\" to skip live Drift data\n- `pair` (optional): Filter by pair name (e.g., \"SOL/ETH\")\n- `from` / `to` (optional, ISO dates): Time range\n- `limit` / `offset` (optional): Pagination"
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"live\": [\n      {\n        \"pair\": \"SOL/ETH\",\n        \"priceA\": 145.50,\n        \"priceB\": 3200.00,\n        \"ratio\": 0.04547,\n        \"zScore\": 1.85,\n        \"timestamp\": \"2026-03-19T12:00:00.000Z\"\n      },\n      {\n        \"pair\": \"BTC/ETH\",\n        \"priceA\": 67500.00,\n        \"priceB\": 3200.00,\n        \"ratio\": 21.09375,\n        \"zScore\": -0.42,\n        \"timestamp\": \"2026-03-19T12:00:00.000Z\"\n      }\n    ],\n    \"history\": [\n      {\n        \"id\": \"uuid-1\",\n        \"pair_name\": \"SOL/ETH\",\n        \"ratio\": \"0.0454700000\",\n        \"z_score\": \"1.8500\",\n        \"market_a_price\": \"145.500000\",\n        \"market_b_price\": \"3200.000000\",\n        \"timestamp\": \"2026-03-19T10:00:00.000Z\"\n      }\n    ]\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Spread Metrics (SOL/ETH Pair)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/metrics/spreads?pair=SOL/ETH",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "metrics", "spreads"],
+							"query": [
+								{ "key": "pair", "value": "SOL/ETH" }
+							]
+						},
+						"description": "Returns spread metrics for the SOL/ETH pair only."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Bot",
+			"item": [
+				{
+					"name": "Get Bot Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/bot/status",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "bot", "status"]
+						},
+						"description": "Returns the bot's running state (inferred from the last tick event), last error, and current configuration. The bot is considered 'running' if the last tick event occurred within 2x the tick interval (60s)."
+					},
+					"response": [
+						{
+							"name": "Running",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"running\": true,\n    \"lastTickAt\": \"2026-03-19T11:59:30.000Z\",\n    \"lastError\": null,\n    \"config\": {\n      \"TICK_INTERVAL_MS\": 30000,\n      \"SPREAD_ENTRY_Z_SCORE\": 2.0,\n      \"SPREAD_EXIT_Z_SCORE\": 0.5,\n      \"FUNDING_ENTRY_THRESHOLD\": 0.15,\n      \"MAX_DRAWDOWN_PCT\": 0.05,\n      \"MAX_SPREAD_ALLOCATION\": 0.4,\n      \"MAX_BASIS_ALLOCATION\": 0.3,\n      \"MIN_LENDING_ALLOCATION\": 0.3,\n      \"POSITION_STOP_LOSS_PCT\": 0.03,\n      \"HEALTH_RATE_FLOOR\": 1.2,\n      \"CONFIDENCE_THRESHOLD\": 0.5\n    }\n  }\n}"
+						},
+						{
+							"name": "Stopped",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"running\": false,\n    \"lastTickAt\": \"2026-03-19T10:00:00.000Z\",\n    \"lastError\": {\n      \"details\": { \"message\": \"Drift RPC timeout\" },\n      \"timestamp\": \"2026-03-19T10:00:15.000Z\"\n    },\n    \"config\": {}\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Bot Events",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/bot/events",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "bot", "events"]
+						},
+						"description": "Returns bot audit events ordered by timestamp DESC.\n\nQuery params:\n- `event_type` (optional): \"tick\" | \"open_position\" | \"close_position\" | \"rebalance\" | \"emergency_exit\" | \"error\"\n- `from` / `to` (optional, ISO dates): Time range\n- `limit` (optional, default 100, max 500)\n- `offset` (optional, default 0)"
+					},
+					"response": [
+						{
+							"name": "Success",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"items\": [\n      {\n        \"id\": \"uuid-1\",\n        \"event_type\": \"tick\",\n        \"details\": {\n          \"spreadSignals\": 2,\n          \"fundingSignals\": 3,\n          \"proposals\": 0,\n          \"executed\": 0\n        },\n        \"timestamp\": \"2026-03-19T11:59:30.000Z\"\n      },\n      {\n        \"id\": \"uuid-2\",\n        \"event_type\": \"open_position\",\n        \"details\": {\n          \"type\": \"spread\",\n          \"pair\": \"SOL/ETH\",\n          \"sizeUsdc\": 200,\n          \"entryZScore\": 2.34\n        },\n        \"timestamp\": \"2026-03-19T11:30:00.000Z\"\n      }\n    ],\n    \"total\": 2\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Bot Events (Ticks Only)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/bot/events?event_type=tick&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "bot", "events"],
+							"query": [
+								{ "key": "event_type", "value": "tick" },
+								{ "key": "limit", "value": "10" }
+							]
+						},
+						"description": "Returns the 10 most recent tick events."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Bot Events (Errors)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/bot/events?event_type=error&limit=20",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "bot", "events"],
+							"query": [
+								{ "key": "event_type", "value": "error" },
+								{ "key": "limit", "value": "20" }
+							]
+						},
+						"description": "Returns the 20 most recent error events."
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

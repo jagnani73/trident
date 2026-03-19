@@ -1,16 +1,33 @@
-import type { Request, Response, Router as RouterType } from "express";
+import type { Router as RouterType } from "express";
 import { Router } from "express";
+
+import { apiHandler, parsePagination, parseTimeRange } from "../utils";
+import { getPositions, getVaultHistory, getVaultState } from "./vault.service";
 
 export const vaultRouter: RouterType = Router();
 
-vaultRouter.get("/state", async (_req: Request, res: Response) => {
-    res.json({ success: true, data: { message: "TODO: vault state" } });
-});
+vaultRouter.get(
+    "/state",
+    apiHandler(async () => {
+        return getVaultState();
+    }),
+);
 
-vaultRouter.get("/positions", async (_req: Request, res: Response) => {
-    res.json({ success: true, data: { message: "TODO: vault positions" } });
-});
+vaultRouter.get(
+    "/positions",
+    apiHandler(async (req) => {
+        const status = req.query.status as "open" | "closed" | undefined;
+        const type = req.query.type as "spread" | "basis" | undefined;
+        const pagination = parsePagination(req);
+        return getPositions({ status, type }, pagination);
+    }),
+);
 
-vaultRouter.get("/history", async (_req: Request, res: Response) => {
-    res.json({ success: true, data: { message: "TODO: vault history" } });
-});
+vaultRouter.get(
+    "/history",
+    apiHandler(async (req) => {
+        const timeRange = parseTimeRange(req);
+        const limit = Math.min(Math.max(Number(req.query.limit) || 500, 1), 2000);
+        return getVaultHistory(timeRange, limit);
+    }),
+);
