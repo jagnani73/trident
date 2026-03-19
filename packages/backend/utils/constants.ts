@@ -22,6 +22,8 @@ export const BOT_CONFIG = {
     MAX_POSITION_AGE_MS: 24 * 60 * 60_000,
     MIN_POSITION_SIZE_USDC: 10,
     CONFIDENCE_THRESHOLD: 0.5,
+    REBALANCE_DRIFT_PCT: 0.05,
+    DRY_RUN: true,
 } as const;
 
 /** Perp market indexes on Drift */

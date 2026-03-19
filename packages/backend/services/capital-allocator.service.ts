@@ -10,6 +10,7 @@ import type {
 } from "../utils/types/services.types";
 import { DatabaseService } from "./database.service";
 import { LoggerService } from "./logger.service";
+import { RiskManagerService } from "./risk-manager.service";
 
 const logger = LoggerService.scoped("capital-allocator");
 
@@ -68,6 +69,10 @@ export class CapitalAllocatorService {
         // 4. Funding signals
         const fundingProposals = await this.evaluateFundingSignals(fundingSignals, riskAssessment, now);
         proposals.push(...fundingProposals);
+
+        // 5. Lending rebalance (idle ↔ lending)
+        const lendingProposals = await this.evaluateLendingRebalance(riskAssessment, now, proposals);
+        proposals.push(...lendingProposals);
 
         if (proposals.length === 0) {
             logger.debug("no-action", { reason: "No opportunities or actions needed" });
@@ -305,6 +310,82 @@ export class CapitalAllocatorService {
                 sizeUsdc: sizeUsdc.toFixed(2),
                 fundingRateApr: signal.fundingRateApr.toFixed(4),
             });
+        }
+
+        return proposals;
+    }
+
+    // ── Lending Rebalance ──────────────────────────────────
+
+    private static async evaluateLendingRebalance(
+        risk: RiskAssessment,
+        now: string,
+        existingProposals: AllocationProposal[],
+    ): Promise<AllocationProposal[]> {
+        const proposals: AllocationProposal[] = [];
+
+        let alloc;
+        try {
+            alloc = await RiskManagerService.getCurrentAllocations();
+        } catch {
+            return proposals;
+        }
+
+        if (alloc.totalValueUsdc <= 0) return proposals;
+
+        const idlePct = alloc.idleUsdc / alloc.totalValueUsdc;
+        const lendingPct = alloc.lendingUsdc / alloc.totalValueUsdc;
+
+        // Deposit: sweep excess idle into lending (idle target is 0%)
+        if (idlePct > BOT_CONFIG.REBALANCE_DRIFT_PCT) {
+            const depositAmount = alloc.idleUsdc - alloc.totalValueUsdc * 0.01; // keep 1% buffer
+            if (depositAmount >= BOT_CONFIG.MIN_POSITION_SIZE_USDC) {
+                proposals.push({
+                    action: "deposit_lending",
+                    lendingParams: { amountUsdc: depositAmount },
+                    reason: `Idle ${(idlePct * 100).toFixed(1)}% exceeds ${(BOT_CONFIG.REBALANCE_DRIFT_PCT * 100).toFixed(0)}% threshold, sweeping $${depositAmount.toFixed(2)} to lending`,
+                    riskAssessment: risk,
+                    timestamp: now,
+                });
+
+                logger.info("lending-deposit-proposal", {
+                    idlePct: (idlePct * 100).toFixed(1),
+                    depositAmount: depositAmount.toFixed(2),
+                });
+
+                return proposals; // don't deposit and withdraw in same tick
+            }
+        }
+
+        // Withdraw: pull from lending when upcoming trades need capital
+        const neededUsdc = existingProposals
+            .filter((p) => p.action === "open_spread" || p.action === "open_basis")
+            .reduce((sum, p) => sum + (p.openParams?.sizeUsdc ?? 0), 0);
+
+        if (neededUsdc > alloc.idleUsdc) {
+            const deficit = neededUsdc - alloc.idleUsdc;
+            const minLendingUsdc = alloc.totalValueUsdc * BOT_CONFIG.MIN_LENDING_ALLOCATION;
+            const excessLending = alloc.lendingUsdc - minLendingUsdc;
+
+            if (excessLending > 0 && lendingPct > BOT_CONFIG.MIN_LENDING_ALLOCATION + BOT_CONFIG.REBALANCE_DRIFT_PCT) {
+                const withdrawAmount = Math.min(deficit, excessLending);
+                if (withdrawAmount >= BOT_CONFIG.MIN_POSITION_SIZE_USDC) {
+                    proposals.push({
+                        action: "withdraw_lending",
+                        lendingParams: { amountUsdc: withdrawAmount },
+                        reason: `Need $${deficit.toFixed(2)} for trades, withdrawing $${withdrawAmount.toFixed(2)} from lending (lending at ${(lendingPct * 100).toFixed(1)}%)`,
+                        riskAssessment: risk,
+                        timestamp: now,
+                    });
+
+                    logger.info("lending-withdraw-proposal", {
+                        neededUsdc: neededUsdc.toFixed(2),
+                        idleUsdc: alloc.idleUsdc.toFixed(2),
+                        withdrawAmount: withdrawAmount.toFixed(2),
+                        lendingPct: (lendingPct * 100).toFixed(1),
+                    });
+                }
+            }
         }
 
         return proposals;

@@ -1,6 +1,8 @@
 import { bot_events, funding_rate_snapshots, positions, spread_snapshots, vault_snapshots } from "@trident/common/database";
 import { eq } from "drizzle-orm";
 
+import BN from "bn.js";
+
 import { BOT_CONFIG, SPREAD_PAIRS } from "../utils/constants";
 import type { AllocationProposal } from "../utils/types/services.types";
 import { CapitalAllocatorService } from "./capital-allocator.service";
@@ -8,6 +10,7 @@ import { DatabaseService } from "./database.service";
 import { DriftService } from "./drift.service";
 import { FundingMonitorService } from "./funding-monitor.service";
 import { LoggerService } from "./logger.service";
+import { RangerVaultService } from "./ranger-vault.service";
 import { RiskManagerService } from "./risk-manager.service";
 import { SpreadDetectorService } from "./spread-detector.service";
 
@@ -145,35 +148,64 @@ export class JobsService {
                 riskAssessment,
             );
 
-            // 4. Execute proposals (only if Drift user is funded — otherwise we'd burn SOL on failed txs)
+            // 4. Execute proposals (gated by DRY_RUN, funding status, and vault availability)
             let executed = 0;
-            const canExecute = DriftService.hasUser() && DriftService.getTotalCollateral() > 0;
-            if (!canExecute) {
+
+            if (BOT_CONFIG.DRY_RUN) {
                 const actionable = proposals.filter((p) => p.action !== "noop");
                 if (actionable.length > 0) {
-                    log.info("skipping-execution", {
-                        reason: "Drift user not funded — observation mode only",
-                        skippedActions: actionable.map((p) => p.action),
+                    log.info("dry-run", {
+                        reason: "DRY_RUN enabled — no on-chain transactions will be sent",
+                        proposals: actionable.map((p) => ({ action: p.action, reason: p.reason })),
                     });
                 }
-            } else {
-                for (const proposal of proposals) {
-                    if (proposal.action === "noop") continue;
-                    try {
-                        await this.executeProposal(proposal, db);
-                        executed++;
-                    } catch (err) {
-                        log.error("proposal-execution-failed", {
+            }
+
+            const canExecuteDrift = !BOT_CONFIG.DRY_RUN && DriftService.hasUser() && DriftService.getTotalCollateral() > 0;
+            const canExecuteVault = canExecuteDrift && RangerVaultService.isAvailable();
+
+            for (const proposal of proposals) {
+                if (proposal.action === "noop") continue;
+
+                const isVaultOp = proposal.action === "deposit_lending" || proposal.action === "withdraw_lending";
+                const isDriftOp = !isVaultOp;
+
+                if (isDriftOp && !canExecuteDrift) {
+                    if (!BOT_CONFIG.DRY_RUN) {
+                        log.info("skipping-drift-op", {
                             action: proposal.action,
-                            reason: proposal.reason,
-                            err,
-                        });
-                        await this.logBotEvent(db, "error", {
-                            source: "bot-engine",
-                            action: proposal.action,
-                            error: err instanceof Error ? err.message : String(err),
+                            reason: "Drift user not funded — observation mode only",
                         });
                     }
+                    continue;
+                }
+
+                if (isVaultOp && !canExecuteVault) {
+                    if (!BOT_CONFIG.DRY_RUN) {
+                        log.info("skipping-vault-op", {
+                            action: proposal.action,
+                            reason: !canExecuteDrift
+                                ? "Drift user not funded — observation mode only"
+                                : "Vault not available",
+                        });
+                    }
+                    continue;
+                }
+
+                try {
+                    await this.executeProposal(proposal, db);
+                    executed++;
+                } catch (err) {
+                    log.error("proposal-execution-failed", {
+                        action: proposal.action,
+                        reason: proposal.reason,
+                        err,
+                    });
+                    await this.logBotEvent(db, "error", {
+                        source: "bot-engine",
+                        action: proposal.action,
+                        error: err instanceof Error ? err.message : String(err),
+                    });
                 }
             }
 
@@ -390,6 +422,50 @@ export class JobsService {
                     positionId: c.positionId,
                     reason: c.reason,
                     realizedPnl,
+                });
+                break;
+            }
+
+            case "deposit_lending": {
+                const p = proposal.lendingParams!;
+                const amountBN = new BN(Math.floor(p.amountUsdc * 1_000_000));
+
+                await this.logBotEvent(db, "rebalance", {
+                    action: "deposit_lending",
+                    amountUsdc: p.amountUsdc,
+                });
+
+                const depositTx = await RangerVaultService.depositToStrategy("lending", amountBN);
+
+                log.info("deposited-to-lending", { amountUsdc: p.amountUsdc, tx: depositTx });
+
+                await this.logBotEvent(db, "rebalance", {
+                    action: "deposit_lending",
+                    amountUsdc: p.amountUsdc,
+                    tx: depositTx,
+                    status: "confirmed",
+                });
+                break;
+            }
+
+            case "withdraw_lending": {
+                const p = proposal.lendingParams!;
+                const amountBN = new BN(Math.floor(p.amountUsdc * 1_000_000));
+
+                await this.logBotEvent(db, "rebalance", {
+                    action: "withdraw_lending",
+                    amountUsdc: p.amountUsdc,
+                });
+
+                const withdrawTx = await RangerVaultService.withdrawFromStrategy("lending", amountBN);
+
+                log.info("withdrawn-from-lending", { amountUsdc: p.amountUsdc, tx: withdrawTx });
+
+                await this.logBotEvent(db, "rebalance", {
+                    action: "withdraw_lending",
+                    amountUsdc: p.amountUsdc,
+                    tx: withdrawTx,
+                    status: "confirmed",
                 });
                 break;
             }

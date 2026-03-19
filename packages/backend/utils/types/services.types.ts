@@ -66,13 +66,20 @@ export type ProposalAction =
     | "close_spread"
     | "open_basis"
     | "close_basis"
+    | "deposit_lending"
+    | "withdraw_lending"
     | "emergency_exit_all"
     | "noop";
+
+export interface LendingRebalanceParams {
+    amountUsdc: number;
+}
 
 export interface AllocationProposal {
     action: ProposalAction;
     openParams?: OpenPositionParams;
     closeParams?: ClosePositionParams;
+    lendingParams?: LendingRebalanceParams;
     reason: string;
     riskAssessment: RiskAssessment;
     timestamp: string;
