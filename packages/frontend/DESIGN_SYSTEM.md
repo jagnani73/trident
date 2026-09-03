@@ -14,7 +14,7 @@
 | Industry     | Crypto / Quantitative Trading / Yield Optimization                   |
 | Aesthetic    | Dark-first, trading terminal, data-dense. Clean, precise, technical. |
 | Personality  | Sharp, analytical, trustworthy                                       |
-| Target User  | Vault managers, strategy operators, hackathon judges                 |
+| Target User  | Vault managers, strategy operators                                   |
 
 The UI should feel like a professional trading terminal — think Bloomberg Terminal meets modern web. Dark backgrounds, monospace numbers, real-time data updates. Not a marketing page.
 
@@ -157,7 +157,7 @@ Use as: `text-profit`, `bg-profit-muted`, `text-loss`, etc.
 
 ## 4. Layout Architecture
 
-Full-width dashboard, top nav + content. No sidebar initially (simple for hackathon).
+Full-width dashboard, top nav + content. No sidebar — there are only four pages, so top nav covers navigation without the extra chrome.
 
 ```
 +------------------------------------------------------------------+

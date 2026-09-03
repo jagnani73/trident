@@ -1,20 +1,14 @@
-# Trident — Hybrid Yield Vault for Ranger Build-A-Bear Hackathon
+# Trident — Multi-Strategy USDC Yield Vault on Solana
 
 ## What This Is
 
-Trident is a multi-layer USDC vault on Solana for the Ranger Build-A-Bear Hackathon. It combines three yield strategies via Drift Protocol, deployed through a Ranger vault:
+Trident is a multi-layer USDC vault on Solana. It combines three yield strategies via Drift Protocol, deployed through a Ranger vault:
 
 1. **Lending** — USDC lent on Drift (~6% APY floor)
 2. **Spread Trading** — Mean-reversion pairs trades on correlated Drift perps (SOL/ETH, BTC/ETH)
 3. **Basis Trading** — Delta-neutral funding rate capture (long spot + short perp)
 
 An off-chain bot monitors conditions every 30 seconds and rebalances capital between layers.
-
-## Hackathon
-
-- **Deadline:** Apr 6, 2026 (23:59 UTC)
-- **Tracks:** Main Track + Drift Side Track
-- **Constraints:** USDC base, 10%+ APY, no DEX LP/junior tranches/ponzi stables
 
 ## Architecture
 
@@ -176,17 +170,21 @@ All under `/api/v1/`, response format: `{ success: boolean, data: T }`.
 - Risk manager has veto power over all position changes
 - Lending rebalance is threshold-based (>5% drift) to minimize tx fees
 
-## Current State (as of 2026-03-19)
+## Where This Stopped
 
-- **Working:** API server (all 7 endpoints), live Drift market data (funding + spreads), DB with seed + live data, frontend dashboard (4 pages), RangerVaultService (deposit/withdraw/query via Voltr SDK), setup scripts, vault deployed on-chain, lending strategy initialized, full bot pipeline running in DRY_RUN mode (signals → risk → proposals → logged, no execution)
-- **Deployed on-chain:** Vault `6w7SPiB9agGh5ctB1LWMAR9ZpnguDxYm5zGgQS71B7sw`, Lending strategy `GGf8eUHvTX3CLC3HubPpMxm8iqHKheR6ZEK1QAyozv5j`
-- **To go live:** Set `DRY_RUN: false` in BOT_CONFIG + deposit USDC into Drift subaccount
+Development stopped on 2026-03-19. Everything below is the state as of that date; nothing has run since.
+
+- **Built and working:** API server (all 7 endpoints), live Drift market data (funding + spreads), DB with seed + live data, frontend dashboard (4 pages), RangerVaultService (deposit/withdraw/query via Voltr SDK), setup scripts, full bot pipeline running in DRY_RUN mode (signals → risk → proposals → logged, no execution)
+- **Deployed on Solana mainnet:** Vault `6w7SPiB9agGh5ctB1LWMAR9ZpnguDxYm5zGgQS71B7sw`, Lending strategy `GGf8eUHvTX3CLC3HubPpMxm8iqHKheR6ZEK1QAyozv5j`. Two transactions, both on build day.
+- **Never run against real capital:** `DRY_RUN` is still `true` (`packages/backend/utils/constants.ts:26`). The wallet was never funded, no USDC was ever deposited, and no trade has ever been placed. The strategies are unproven outside the synthetic backtest.
+- **No tests.** There is no test suite for any package.
+- **To go live:** fund the wallet, deposit USDC into the Drift subaccount, set `DRY_RUN: false` in BOT_CONFIG.
 
 ## Documentation
 
 - `README.md` — full technical overview with entity definitions and architecture
-- `docs/objective.md` — hackathon details, strategy overview, architecture diagrams
+- `docs/architecture.md` — strategy overview + system/data flow diagrams
 - `docs/implementation.md` — implementation plan, phases, folder structure
-- `docs/strategy.md` — deep strategy thesis + math (hackathon submission, not yet written)
-- `docs/risk-management.md` — risk framework (hackathon submission, not yet written)
+- `docs/strategy.md` — deep strategy thesis + math
+- `docs/risk-management.md` — risk framework
 - `docs/trident-api.postman_collection.json` — Postman collection for all API endpoints

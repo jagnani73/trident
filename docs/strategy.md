@@ -23,11 +23,17 @@ Single-strategy vaults are fragile. Lending-only vaults cap returns at 6-8% APY.
 
 ## 1. Investment Thesis
 
+### The Design Target
+
+Trident was built to a self-imposed target: **10% net APY to depositors, under a hard 5% maximum drawdown, with no net directional exposure to crypto prices.** That target is the constraint the rest of this document reasons against.
+
+It is set deliberately above what any single low-risk source on Drift pays. That is what forces the multi-layer design — the target is not reachable by lending alone, and the two strategies that can clear it are each unreliable on their own.
+
 ### The Problem with Single-Strategy Vaults
 
 Most DeFi yield vaults commit to one source of return and live or die by it:
 
-- **Lending vaults** earn stable but capped yields (Drift USDC lending: ~6-8% APY). They meet the hackathon's 10% APY minimum only during peak borrow demand.
+- **Lending vaults** earn stable but capped yields (Drift USDC lending: ~6-8% APY). They clear a 10% APY target only during peak borrow demand.
 - **Basis vaults** capture funding rate carry but suffer when funding regimes flip. A vault that entered a basis trade at +20% APR can find itself paying funding at -10% APR within hours.
 - **Directional vaults** (leveraged long/short) expose depositors to catastrophic drawdowns during volatility spikes.
 
@@ -112,7 +118,7 @@ Drift USDC lending rates fluctuate with market activity. Historical ranges:
 | Normal | 6-8% |
 | High activity (volatile markets) | 8-15% |
 
-The lending layer alone does not meet the hackathon's 10% APY target in most conditions — which is precisely why the other two layers exist.
+The lending layer alone does not reach the 10% APY design target in most conditions — which is precisely why the other two layers exist.
 
 ---
 
@@ -660,7 +666,7 @@ For drawdown to reach 5%, we'd need stop-losses hit AND significant slippage:
 | Bear (low vol) | ~10% | 95/5/0 | 5-7% | ~0% |
 | Worst case | ~5% | N/A (exit) | Negative | ≤5% (hard cap) |
 
-**Expected blended APY** (probability-weighted): ~14-20% APY, exceeding the 10% hackathon minimum with significant margin.
+**Expected blended APY** (probability-weighted): ~14-20% APY, clearing the 10% design target with significant margin.
 
 ---
 
@@ -711,11 +717,15 @@ Rather than rebalancing on every tick (2,880 times per day), lending rebalance o
 |---|---|---|---|---|
 | $10K-$50K | None | None | None | All strategies work at full capacity |
 | $50K-$200K | Minimal | Minimal | None | Position sizes small relative to Drift liquidity |
-| $200K-$500K | Low | Low | None | Target range (hackathon prize seeding) |
+| $200K-$500K | Low | Low | None | Assumed range — position sizing is calibrated here |
 | $500K-$2M | Moderate | Moderate | None | May need wider spread thresholds to avoid market impact |
 | $2M+ | Significant | Significant | None | Spread/basis capacity-constrained; lending scales linearly |
 
-At the target TVL range ($200K-$500K from hackathon prize seeding), position sizes are small relative to Drift's perpetual market depth (typically $50M+ daily volume for SOL, BTC, ETH). Market impact is negligible.
+Sizing throughout this document assumes a **$200K-$500K TVL band**. This is a modelling assumption, not a measured figure — the vault has never held deposits.
+
+That band is the interesting one to design against, for two reasons. It is small enough that Drift's order book depth is a non-issue: positions never move the market, so fill quality can be treated as roughly constant instead of modelled. And it is large enough that the strategies are worth running at all — spread and basis trades pay per-leg transaction and slippage costs that swamp the edge on a few thousand dollars of capital, but are immaterial against six figures.
+
+At this band, position sizes are small relative to Drift's perpetual market depth (typically $50M+ daily volume for SOL, BTC, ETH). Market impact is negligible. Outside it, the assumptions degrade in both directions — see the table above.
 
 ### Execution Characteristics
 

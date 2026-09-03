@@ -16,7 +16,7 @@ Python backtesting module that validates Trident's trading strategy against synt
 
 ## Setup
 
-From the repo root (`ranger/`):
+From the repo root (`trident/`):
 
 ```bash
 # Install dependencies
@@ -30,7 +30,7 @@ py -m pip install -r packages/backtester/requirements.txt
 
 ## Running
 
-All commands are run from the repo root (`ranger/`):
+All commands are run from the repo root (`trident/`):
 
 ```bash
 # Default run: 90 days, $10K initial capital, seed=42

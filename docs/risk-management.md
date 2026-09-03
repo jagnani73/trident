@@ -180,7 +180,9 @@ If the remaining capacity is below $10 USDC (minimum position size), no new posi
 
 ### Position Sizing vs Market Depth
 
-At the target TVL range ($200K-$500K from hackathon prize seeding), individual position sizes are small relative to Drift's perpetual market depth:
+Position sizing assumes a **$200K-$500K TVL band** — a modelling assumption rather than a measured figure, since the vault has never held deposits. The band is chosen to be small enough that Drift's order book depth is a non-issue and large enough that per-leg transaction and slippage costs stay immaterial; see [`strategy.md` §9](strategy.md#scalability) for the full reasoning.
+
+At that size, individual position sizes are small relative to Drift's perpetual market depth:
 
 | Market | Typical Daily Volume | Max Position Size (at $500K TVL) | Position / Volume |
 |---|---|---|---|

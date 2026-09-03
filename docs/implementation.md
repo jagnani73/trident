@@ -2,21 +2,21 @@
 
 ## Context
 
-We're building a hybrid yield vault for the Ranger Build-A-Bear Hackathon (deadline: Apr 6, 2026). The vault combines Drift lending, perp spread trading, and basis trading into a single adaptive USDC vault on Solana. Submitting to both Main Track and Drift Side Track.
+Trident combines Drift lending, perp spread trading, and basis trading into a single adaptive USDC vault on Solana. The vault is deployed through Ranger's vault program; an off-chain TypeScript bot reallocates capital between the three layers every 30 seconds.
 
-This doc covers **what** we built, **how** the pieces fit together, and **what's left**.
+This doc covers **what** was built, **how** the pieces fit together, and **where it stopped**.
 
 ---
 
 ## Monorepo Structure (Actual)
 
 ```
-ranger/
+trident/
 ├── docs/
-│   ├── objective.md                # Hackathon details + strategy overview
+│   ├── architecture.md             # Strategy overview + system/data flow diagrams
 │   ├── implementation.md           # This file
-│   ├── strategy.md                 # Deep strategy thesis + math (TODO)
-│   ├── risk-management.md          # Risk framework (TODO)
+│   ├── strategy.md                 # Deep strategy thesis + math
+│   ├── risk-management.md          # Risk framework
 │   └── trident-api.postman_collection.json  # Postman collection (15 requests)
 │
 ├── packages/
@@ -175,15 +175,17 @@ ranger/
 - Results: **21.27% APY**, 2.59% max drawdown, 3.03 Sharpe, 53.3% win rate
 - Run: `py packages/backtester/run.py`
 
-### Submission Docs
+### Strategy Docs
 - `docs/strategy.md` — deep strategy thesis + math (done)
 - `docs/risk-management.md` — risk framework (done)
 
 ---
 
-## Current State (2026-03-19)
+## State at 2026-03-19
 
-### Working
+Development stopped on this date. Everything below is a snapshot of that day; the bot has not been run since.
+
+### Working (as of that date)
 - Full bot pipeline running in DRY_RUN mode (signals → risk → proposals → logged, no execution)
 - API server — all 7 endpoints return data (DB baseline + live Drift overlay)
 - Live Drift connection — funding rates, oracle prices, spread ratios flowing from mainnet
@@ -209,12 +211,24 @@ ranger/
 
 ---
 
-## Remaining Work (Priority Order)
+## Where It Stopped
 
-1. ~~**Submission docs**~~ — strategy.md + risk-management.md (both done)
-2. **Demo video** — 3-minute pitch/demo for hackathon submission
-3. **Go live** — set `DRY_RUN: false` + deposit USDC into Drift (requires user confirmation)
-4. **Backtester** — if time permits
+Work ended on 2026-03-19 after a single build session. The pipeline is complete end to end and was exercised in DRY_RUN mode against live Drift data, but it has never traded.
+
+What was reached:
+
+- **Deployed to Solana mainnet** — vault `6w7SPiB9agGh5ctB1LWMAR9ZpnguDxYm5zGgQS71B7sw` and lending strategy `GGf8eUHvTX3CLC3HubPpMxm8iqHKheR6ZEK1QAyozv5j`. Two transactions, both on build day. Nothing on-chain has happened since.
+- **Signals, risk, and allocation all produce output** against live mainnet data — proposals were generated and logged.
+
+What was never done:
+
+- **The wallet was never funded.** No USDC was deposited into the vault or the Drift subaccount.
+- **`DRY_RUN` is still `true`** (`packages/backend/utils/constants.ts:26`). Every proposal the allocator produced was logged and discarded at the execution boundary.
+- **No trade has ever been placed.** The spread and basis logic has never run against real capital, so the strategies are unvalidated outside the synthetic backtest.
+- **No tests.** There is no test suite for any package — backend, frontend, or backtester.
+- **Not hosted.** The backend and dashboard only ever ran locally.
+
+To take it further: fund the wallet, deposit USDC into the Drift subaccount, then set `DRY_RUN: false`.
 
 ---
 

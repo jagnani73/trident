@@ -2,8 +2,6 @@
 
 Adaptive USDC yield vault on Solana that dynamically shifts capital between three strategies — Drift lending, perp spread trading, and basis trading — through a [Ranger](https://ranger.finance) vault. An off-chain bot evaluates market signals every 30 seconds and rebalances accordingly.
 
-> **Hackathon:** [Ranger Build-A-Bear](https://ranger.finance) — Main Track + Drift Side Track. Deadline Apr 6, 2026.
-
 ---
 
 ## How It Works (Plain English)
@@ -443,7 +441,7 @@ All deployed on Solana mainnet-beta.
 |---|---|
 | [`docs/strategy.md`](docs/strategy.md) | Deep strategy thesis — investment thesis, math formulas, expected returns, scenario analysis |
 | [`docs/risk-management.md`](docs/risk-management.md) | Risk framework — taxonomy, controls, stress scenarios, recovery procedures |
-| [`docs/objective.md`](docs/objective.md) | Hackathon details, eligibility, judging criteria, architecture diagrams |
+| [`docs/architecture.md`](docs/architecture.md) | Strategy overview, system architecture and data flow diagrams |
 | [`docs/implementation.md`](docs/implementation.md) | Implementation phases, what's built, folder structure |
 | [`docs/trident-api.postman_collection.json`](docs/trident-api.postman_collection.json) | Postman collection for all API endpoints |
 

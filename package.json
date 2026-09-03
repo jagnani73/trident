@@ -2,7 +2,7 @@
     "name": "trident",
     "version": "0.1.0",
     "private": true,
-    "description": "Hybrid yield vault for Ranger Build-A-Bear Hackathon",
+    "description": "Adaptive multi-strategy USDC yield vault on Solana",
     "scripts": {
         "dev": "pnpm --filter @trident/backend dev",
         "dev:frontend": "pnpm --filter @trident/frontend dev",
